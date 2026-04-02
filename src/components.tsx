@@ -162,8 +162,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
                     className="relative glass-strong w-full max-w-lg shadow-2xl overflow-hidden"
                 >
                     <div className="flex items-center justify-between p-6 border-b border-border">
-                        <h2 className="text-xl font-bold">{title}</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                        <h2 className="text-xl font-bold text-text-primary">{title}</h2>
+                        <button onClick={onClose} className="p-2 hover:bg-bg-surface-soft rounded-lg transition-colors text-text-secondary hover:text-text-primary">
                             <X size={20} />
                         </button>
                     </div>
@@ -219,7 +219,7 @@ export const ToastContainer: React.FC<{ toasts: any[], onRemove: (id: string) =>
 // ==================== EMPTY STATE ====================
 export const EmptyState: React.FC<{ message?: string }> = ({ message = "Nenhum dado encontrado" }) => (
     <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted opacity-50">
-        <div className="p-4 rounded-full bg-white/5 mb-4">
+        <div className="p-4 rounded-full bg-bg-surface-soft mb-4">
             <AlertCircle size={48} />
         </div>
         <p className="text-lg font-medium">{message}</p>

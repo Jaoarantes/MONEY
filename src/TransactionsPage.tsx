@@ -71,7 +71,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 </div>
                 <button
                     onClick={exportToCSV}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-border rounded-xl font-medium transition-all"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-surface-soft hover:bg-bg-surface-soft/80 border border-border rounded-xl font-medium transition-all text-text-primary"
                 >
                     <Download size={18} />
                     <span>Exportar CSV</span>
@@ -131,7 +131,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-border bg-white/[0.02]">
+                            <tr className="border-b border-border bg-bg-surface-soft/40">
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Data</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Descrição</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Categoria</th>
@@ -144,7 +144,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                             {paginatedTransactions.map((tx) => {
                                 const category = categories.find(c => c.id === tx.category);
                                 return (
-                                    <tr key={tx.id} className="hover:bg-white/[0.03] transition-colors group">
+                                    <tr key={tx.id} className="hover:bg-bg-surface-soft transition-colors group">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-text-primary">
                                                 {format(parseISO(tx.date), 'dd MMM, yyyy')}
@@ -222,7 +222,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="p-2 hover:bg-white/5 disabled:opacity-30 rounded-lg transition-all"
+                                className="p-2 hover:bg-bg-surface-soft disabled:opacity-30 rounded-lg transition-all text-text-secondary"
                             >
                                 <ChevronLeft size={20} />
                             </button>
@@ -233,7 +233,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                                         onClick={() => setPage(i + 1)}
                                         className={cn(
                                             "w-8 h-8 rounded-lg text-sm font-medium transition-all",
-                                            page === i + 1 ? "bg-accent text-white" : "hover:bg-white/5 text-text-muted"
+                                            page === i + 1 ? "bg-accent text-text-on-accent" : "hover:bg-bg-surface-soft text-text-muted"
                                         )}
                                     >
                                         {i + 1}
@@ -243,7 +243,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
-                                className="p-2 hover:bg-white/5 disabled:opacity-30 rounded-lg transition-all"
+                                className="p-2 hover:bg-bg-surface-soft disabled:opacity-30 rounded-lg transition-all text-text-secondary"
                             >
                                 <ChevronRight size={20} />
                             </button>

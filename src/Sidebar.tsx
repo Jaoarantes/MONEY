@@ -40,8 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Mobile Header */}
             <div className="lg:hidden fixed top-0 left-0 right-0 h-16 glass-strong z-40 px-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-bold">M</div>
-                    <span className="font-bold tracking-tight">MONEY</span>
+                    <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-text-on-accent font-bold">M</div>
+                    <span className="font-bold tracking-tight text-text-primary">MONEY</span>
                 </div>
                 <button onClick={() => setIsMobileMenuOpen(true)} className="p-2">
                     <Menu size={24} />
@@ -67,8 +67,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold">M</div>
-                                    <span className="font-bold text-xl tracking-tight">MONEY</span>
+                                    <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-text-on-accent font-bold">M</div>
+                                    <span className="font-bold text-xl tracking-tight text-text-primary">MONEY</span>
                                 </div>
                                 <button onClick={() => setIsMobileMenuOpen(false)}>
                                     <X size={24} />
@@ -86,8 +86,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         className={cn(
                                             "w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-200",
                                             currentPage === item.id
-                                                ? "bg-accent text-white shadow-lg shadow-accent/20"
-                                                : "hover:bg-white/5 text-text-secondary"
+                                                ? "bg-accent text-text-on-accent shadow-lg shadow-accent/20"
+                                                : "hover:bg-bg-surface-soft text-text-secondary"
                                         )}
                                     >
                                         <item.icon size={22} />
@@ -97,18 +97,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             </nav>
 
                             <div className="mt-auto pt-6 border-t border-border space-y-4">
-                                <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5">
+                                <div className="flex items-center gap-3 p-4 rounded-xl bg-bg-surface-soft">
                                     <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
                                         <User size={20} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-white truncate">{userEmail?.split('@')[0]}</p>
+                                        <p className="text-sm font-bold text-text-primary truncate">{userEmail?.split('@')[0]}</p>
                                         <p className="text-[10px] text-text-muted truncate">{userEmail}</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={onToggleTheme}
-                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 text-text-secondary"
+                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-bg-surface-soft text-text-secondary"
                                 >
                                     {settings.theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                                     <span>{settings.theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
@@ -138,12 +138,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             animate={{ opacity: 1 }}
                             className="flex items-center gap-2"
                         >
-                            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold shadow-lg shadow-accent/20">M</div>
+                            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-text-on-accent font-bold shadow-lg shadow-accent/20">M</div>
                             <span className="font-bold text-xl tracking-tight">MONEY</span>
                         </motion.div>
                     )}
                     {isCollapsed && (
-                        <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold mx-auto">M</div>
+                        <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-text-on-accent font-bold mx-auto">M</div>
                     )}
                 </div>
 
@@ -155,8 +155,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             className={cn(
                                 "w-full flex items-center rounded-xl transition-all duration-300 relative group overflow-hidden h-12",
                                 currentPage === item.id
-                                    ? "bg-accent text-white shadow-lg shadow-accent/25"
-                                    : "hover:bg-white/5 text-text-secondary"
+                                    ? "bg-accent text-text-on-accent shadow-lg shadow-accent/25"
+                                    : "hover:bg-bg-surface-soft text-text-secondary"
                             )}
                         >
                             <div className={cn(
@@ -173,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {currentPage === item.id && (
                                 <motion.div
                                     layoutId="activeTab"
-                                    className="absolute left-0 top-0 bottom-0 w-1 bg-white"
+                                    className="absolute left-0 top-0 bottom-0 w-1 bg-text-on-accent"
                                 />
                             )}
                         </button>
@@ -182,12 +182,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 <div className="p-4 border-t border-border space-y-2">
                     {!isCollapsed && (
-                        <div className="flex items-center gap-3 p-3 mb-2 rounded-xl bg-white/5 group hover:bg-white/10 transition-all">
+                        <div className="flex items-center gap-3 p-3 mb-2 rounded-xl bg-bg-surface-soft group hover:bg-bg-surface-soft/80 transition-all">
                             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
                                 <User size={20} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-white truncate">{userEmail?.split('@')[0]}</p>
+                                <p className="text-xs font-bold text-text-primary truncate">{userEmail?.split('@')[0]}</p>
                                 <p className="text-[10px] text-text-muted truncate">{userEmail}</p>
                             </div>
                         </div>
@@ -196,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                         onClick={onToggleTheme}
                         className={cn(
-                            "w-full flex items-center h-12 rounded-xl hover:bg-white/5 text-text-secondary transition-all",
+                            "w-full flex items-center h-12 rounded-xl hover:bg-bg-surface-soft text-text-secondary transition-all",
                             isCollapsed && "justify-center"
                         )}
                     >

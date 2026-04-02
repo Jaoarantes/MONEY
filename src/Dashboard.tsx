@@ -23,7 +23,7 @@ interface DashboardProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="custom-tooltip">
+            <div className="custom-tooltip glass-strong">
                 <p className="text-xs text-text-secondary mb-1">{label}</p>
                 {payload.map((entry: any, index: number) => (
                     <div key={index} className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="space-y-4">
                         {topExpenses.map((expense, index) => (
                             <div key={index} className="flex items-center gap-4 group">
-                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-xs font-bold text-text-muted">
+                                <div className="w-8 h-8 rounded-lg bg-bg-surface-soft flex items-center justify-center text-xs font-bold text-text-muted">
                                     #{index + 1}
                                 </div>
                                 <div className="flex-1">
@@ -294,12 +294,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </ResponsiveContainer>
                     <div className="mt-4 space-y-4">
                         {goals.map(goal => (
-                            <div key={goal.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-border">
+                            <div key={goal.id} className="flex items-center justify-between p-3 rounded-xl bg-bg-surface-soft border border-border">
                                 <div className="flex items-center gap-3">
                                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: goal.color }} />
-                                    <span className="text-sm font-medium">{goal.name}</span>
+                                    <span className="text-sm font-medium text-text-primary">{goal.name}</span>
                                 </div>
-                                <div className="text-sm font-bold">{(goal.currentAmount / goal.targetAmount * 100).toFixed(0)}%</div>
+                                <div className="text-sm font-bold text-text-primary">{(goal.currentAmount / goal.targetAmount * 100).toFixed(0)}%</div>
                             </div>
                         ))}
                     </div>

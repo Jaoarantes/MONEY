@@ -23,6 +23,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isContributionModalOpen, setIsContributionModalOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+    const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
     // Contribution Form
     const [contribution, setContribution] = useState('0,00');
@@ -39,14 +40,24 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
         const targetNum = Number(targetAmount.replace(/[^\d]/g, '')) / 100;
         const currentNum = Number(currentAmount.replace(/[^\d]/g, '')) / 100;
 
-        onAddGoal({
-            name,
-            targetAmount: targetNum,
-            currentAmount: currentNum,
-            deadline,
-            category: 'general',
-            color
-        });
+        if (editingGoal) {
+            onUpdateGoal(editingGoal.id, {
+                name,
+                targetAmount: targetNum,
+                currentAmount: currentNum,
+                deadline,
+                color
+            });
+        } else {
+            onAddGoal({
+                name,
+                targetAmount: targetNum,
+                currentAmount: currentNum,
+                deadline,
+                category: 'general',
+                color
+            });
+        }
 
         setIsModalOpen(false);
         resetForm();
@@ -153,24 +164,32 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                                         {percent >= 100 ? <CheckCircle2 size={14} /> : <TrendingUp size={14} />}
                                         {percent >= 100 ? 'META CONCLUÍDA!' : 'DENTRO DO PRAZO'}
                                     </div>
-                                    <button
-                                        onClick={() => { setSelectedGoal(goal); setIsContributionModalOpen(true); }}
-                                        className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
-                                    >
-                                        <Plus size={16} />
-                                        ADICIONAR APORTE
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => { setEditingGoal(goal); setName(goal.name); setTargetAmount(goal.targetAmount.toString()); setCurrentAmount(goal.currentAmount.toString()); setDeadline(goal.deadline); setColor(goal.color); setIsModalOpen(true); }}
+                                            className="p-2 rounded-xl bg-bg-surface-soft hover:bg-bg-surface-soft/80 text-text-secondary transition-all"
+                                        >
+                                            <Edit2 size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => { setSelectedGoal(goal); setIsContributionModalOpen(true); }}
+                                            className="bg-bg-surface-soft hover:bg-bg-surface-soft/80 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                                        >
+                                            <Plus size={16} />
+                                            APORTE
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <Target className="absolute -right-8 -bottom-8 text-white opacity-5 pointer-events-none" size={150} />
+                            <Target className="absolute -right-8 -bottom-8 text-text-primary opacity-[0.03] pointer-events-none" size={150} />
                         </div>
                     );
                 })}
             </div>
 
             {/* Goal Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nova Meta Financeira">
+            <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingGoal(null); resetForm(); }} title={editingGoal ? "Editar Meta" : "Nova Meta Financeira"}>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-text-secondary">Nome da Meta</label>
@@ -241,8 +260,8 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full py-4 bg-accent text-white rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                        CRIAR META
+                    <button type="submit" className="w-full py-4 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        {editingGoal ? "SALVAR ALTERAÇÕES" : "CRIAR META"}
                     </button>
                 </form>
             </Modal>
@@ -269,7 +288,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                         />
                     </div>
 
-                    <button type="submit" className="w-full py-4 bg-positive text-white rounded-xl font-bold shadow-xl shadow-positive/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    <button type="submit" className="w-full py-4 bg-positive text-text-on-accent rounded-xl font-bold shadow-xl shadow-positive/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                         CONFIRMAR APORTE
                     </button>
                 </form>

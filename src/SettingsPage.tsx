@@ -142,7 +142,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                     onClick={() => onUpdateSettings({ ...settings, theme: 'light' })}
                                     className={cn(
                                         "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
-                                        settings.theme === 'light' ? "bg-white text-black shadow-xl" : "text-text-muted"
+                                        settings.theme === 'light' ? "bg-accent text-text-on-accent shadow-xl" : "text-text-muted hover:text-text-primary"
                                     )}
                                 >
                                     <Sun size={20} /> Modo Claro
@@ -151,7 +151,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                     onClick={() => onUpdateSettings({ ...settings, theme: 'dark' })}
                                     className={cn(
                                         "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
-                                        settings.theme === 'dark' ? "bg-accent text-white shadow-xl shadow-accent/20" : "text-text-muted"
+                                        settings.theme === 'dark' ? "bg-accent text-text-on-accent shadow-xl shadow-accent/20" : "text-text-muted hover:text-text-primary"
                                     )}
                                 >
                                     <Moon size={20} /> Modo Escuro

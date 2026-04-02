@@ -112,7 +112,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         }}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
-                            type === 'income' ? "bg-positive text-white shadow-lg shadow-positive/20" : "text-text-muted hover:text-text-primary"
+                            type === 'income' ? "bg-positive text-text-on-accent shadow-lg shadow-positive/20" : "text-text-muted hover:text-text-primary"
                         )}
                     >
                         <ArrowUp size={20} />
@@ -126,7 +126,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         }}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
-                            type === 'expense' ? "bg-negative text-white shadow-lg shadow-negative/20" : "text-text-muted hover:text-text-primary"
+                            type === 'expense' ? "bg-negative text-text-on-accent shadow-lg shadow-negative/20" : "text-text-muted hover:text-text-primary"
                         )}
                     >
                         <ArrowDown size={20} />
@@ -251,7 +251,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         <div className="flex items-center gap-3">
                             <div className={cn(
                                 "p-2 rounded-lg transition-colors",
-                                recurrent ? "bg-accent text-white" : "bg-white/5 text-text-muted"
+                                recurrent ? "bg-accent text-text-on-accent" : "bg-bg-surface-soft text-text-muted"
                             )}>
                                 <Repeat size={20} />
                             </div>
@@ -265,7 +265,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             onClick={() => setRecurrent(!recurrent)}
                             className={cn(
                                 "w-12 h-6 rounded-full transition-all relative p-1",
-                                recurrent ? "bg-accent" : "bg-white/10"
+                                recurrent ? "bg-accent" : "bg-bg-surface-soft"
                             )}
                         >
                             <div className={cn(
@@ -293,7 +293,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                                                 onClick={() => setFrequency(f as any)}
                                                 className={cn(
                                                     "py-2 rounded-lg text-xs font-bold transition-all border",
-                                                    frequency === f ? "bg-accent border-accent text-white shadow-lg shadow-accent/20" : "bg-white/5 border-border text-text-muted hover:text-text-primary"
+                                                    frequency === f ? "bg-accent border-accent text-text-on-accent shadow-lg shadow-accent/20" : "bg-bg-surface-soft border-border text-text-muted hover:text-text-primary"
                                                 )}
                                             >
                                                 {f === 'daily' ? 'Diário' : f === 'weekly' ? 'Semanal' : f === 'monthly' ? 'Mensal' : 'Anual'}
@@ -323,7 +323,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex-1 py-4 px-6 rounded-2xl border border-border text-text-secondary font-bold hover:bg-white/5 transition-all"
+                            className="flex-1 py-4 px-6 rounded-2xl border border-border text-text-secondary font-bold hover:bg-bg-surface-soft transition-all"
                         >
                             Cancelar
                         </button>
@@ -333,7 +333,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         disabled={isSubmitting || !description || parseCurrencyInput(amount) <= 0}
                         className={cn(
                             "flex-[2] py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all",
-                            showSuccess ? "bg-positive text-white" : "bg-accent text-white shadow-xl shadow-accent/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100"
+                            showSuccess ? "bg-positive text-text-on-accent" : "bg-accent text-text-on-accent shadow-xl shadow-accent/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100"
                         )}
                     >
                         {isSubmitting ? (

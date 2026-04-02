@@ -87,7 +87,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                         <div key={budget.id} className="glass-card p-6 flex flex-col gap-6 group relative overflow-hidden">
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: category?.color || 'var(--color-accent)' }}>
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-text-on-accent" style={{ backgroundColor: category?.color || 'var(--color-accent)' }}>
                                         <PieChart size={24} />
                                     </div>
                                     <div>
