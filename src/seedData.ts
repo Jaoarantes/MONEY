@@ -73,7 +73,6 @@ export function generateSeedTransactions(): Transaction[] {
             description: desc,
             categoryId: cat.id,
             date: format(date, 'yyyy-MM-dd'),
-            tags: [],
             recurrent: Math.random() < 0.2,
             recurrenceFrequency: Math.random() < 0.2 ? 'monthly' : undefined,
             paymentMethod: randomItem(paymentMethods),
