@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { Dashboard } from './Dashboard';
 import { TransactionsPage } from './TransactionsPage';
@@ -104,6 +104,7 @@ export default function App() {
         return (
           <AddTransaction
             categories={categories}
+            paymentMethods={settings.paymentMethods}
             onSubmit={handleAddTransaction}
             initialData={editingTransaction || undefined}
             onCancel={editingTransaction ? () => { setEditingTransaction(null); setCurrentPage('transactions'); } : undefined}

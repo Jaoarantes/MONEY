@@ -50,6 +50,7 @@ export interface AppSettings {
     locale: string;
     theme: 'dark' | 'light';
     monthStart: number;
+    paymentMethods: string[];
 }
 
 export type PageName =

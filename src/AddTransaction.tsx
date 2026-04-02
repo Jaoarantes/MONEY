@@ -10,20 +10,21 @@ import type { Category, Transaction } from './types';
 
 interface AddTransactionProps {
     categories: Category[];
+    paymentMethods: string[];
     onSubmit: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
     onCancel?: () => void;
     initialData?: Transaction;
 }
 
 export const AddTransaction: React.FC<AddTransactionProps> = ({
-    categories, onSubmit, onCancel, initialData
+    categories, paymentMethods, onSubmit, onCancel, initialData
 }) => {
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type || 'expense');
     const [amount, setAmount] = useState(initialData?.amount ? formatCurrencyInput(initialData.amount) : '0,00');
     const [description, setDescription] = useState(initialData?.description || '');
     const [category, setCategory] = useState(initialData?.category || categories.find(c => c.type === 'expense')?.id || '');
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
-    const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || 'Pix');
+    const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || paymentMethods[0] || 'Pix');
     const [recurrent, setRecurrent] = useState(initialData?.recurrent || false);
     const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>(initialData?.recurrenceFrequency || 'monthly');
     const [notes, setNotes] = useState(initialData?.notes || '');
@@ -212,12 +213,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             onChange={(e) => setPaymentMethod(e.target.value)}
                             className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all"
                         >
-                            <option value="Pix">Pix</option>
-                            <option value="Cartão de Crédito">Cartão de Crédito</option>
-                            <option value="Cartão de Débito">Cartão de Débito</option>
-                            <option value="Dinheiro">Dinheiro</option>
-                            <option value="TED">TED</option>
-                            <option value="Boleto">Boleto</option>
+                            {paymentMethods.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
                         </select>
                     </div>
                 </div>

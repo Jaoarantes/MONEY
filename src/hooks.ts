@@ -67,12 +67,19 @@ export function useToast() {
 // =====================================================
 
 export function useSettings() {
-    const [settings, setSettings] = useStorage<AppSettings>('app-settings', {
+    const [storedSettings, setSettings] = useStorage<AppSettings>('app-settings', {
         currency: 'BRL',
         locale: 'pt-BR',
         theme: 'dark',
         monthStart: 1,
+        paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto'],
     });
+
+    // Ensure paymentMethods exists (defensive for existing users)
+    const settings = {
+        ...storedSettings,
+        paymentMethods: storedSettings.paymentMethods || ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto']
+    };
 
     const toggleTheme = useCallback(() => {
         setSettings((prev) => ({
