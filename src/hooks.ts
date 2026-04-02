@@ -15,6 +15,31 @@ import type {
 import { getMonthKey } from './utils';
 
 // =====================================================
+// MAPPERS — SQL (snake_case) to TS (camelCase)
+// =====================================================
+
+const mapTransaction = (sql: any): Transaction => ({
+    ...sql,
+    createdAt: sql.created_at,
+    updatedAt: sql.updated_at
+});
+
+const mapCategory = (sql: any): Category => ({
+    ...sql,
+    createdAt: sql.created_at
+});
+
+const mapGoal = (sql: any): Goal => ({
+    ...sql,
+    createdAt: sql.created_at
+});
+
+const mapBudget = (sql: any): Budget => ({
+    ...sql,
+    createdAt: sql.created_at
+});
+
+// =====================================================
 // useToast — notification system
 // =====================================================
 
@@ -26,7 +51,7 @@ export function useToast() {
         setToasts((prev) => [...prev, { id, type, message }]);
         setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== id));
-        }, 3000);
+        }, 5000); // Extended to 5s for better visibility
     }, []);
 
     const removeToast = useCallback((id: string) => {
@@ -37,7 +62,7 @@ export function useToast() {
 }
 
 // =====================================================
-// useSettings — app settings management (remains LocalStorage)
+// useSettings — app settings management (LocalStorage)
 // =====================================================
 
 export function useSettings() {
@@ -60,7 +85,6 @@ export function useSettings() {
         });
     }, []);
 
-    // Ensure paymentMethods exists
     const settings = {
         ...storedSettings,
         paymentMethods: storedSettings.paymentMethods || ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto']
@@ -90,7 +114,8 @@ export function useCategories() {
             .select('*')
             .order('name');
 
-        if (!error && data) setCategories(data);
+        if (error) console.error('Error fetching categories:', error);
+        if (data) setCategories(data.map(mapCategory));
         setLoading(false);
     }, []);
 
@@ -108,11 +133,14 @@ export function useCategories() {
             .select()
             .single();
 
-        if (!error && data) {
-            setCategories(prev => [...prev, data]);
-            return data;
+        if (error) {
+            console.error('Error adding category:', error);
+            return null;
         }
-        return null;
+
+        const mapped = mapCategory(data);
+        setCategories(prev => [...prev, mapped]);
+        return mapped;
     }, []);
 
     const updateCategory = useCallback(async (id: string, updates: Partial<Category>) => {
@@ -123,9 +151,13 @@ export function useCategories() {
             .select()
             .single();
 
-        if (!error && data) {
-            setCategories(prev => prev.map(c => c.id === id ? data : c));
+        if (error) {
+            console.error('Error updating category:', error);
+            return;
         }
+
+        const mapped = mapCategory(data);
+        setCategories(prev => prev.map(c => c.id === id ? mapped : c));
     }, []);
 
     const deleteCategory = useCallback(async (id: string) => {
@@ -134,12 +166,37 @@ export function useCategories() {
             .delete()
             .eq('id', id);
 
-        if (!error) {
-            setCategories(prev => prev.filter(c => c.id !== id));
-        }
+        if (error) console.error('Error deleting category:', error);
+        else setCategories(prev => prev.filter(c => c.id !== id));
     }, []);
 
-    return { categories, loading, addCategory, updateCategory, deleteCategory, setCategories };
+    const seedInitialCategories = useCallback(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { DEFAULT_CATEGORIES } = await import('./seedData');
+        const newCats = DEFAULT_CATEGORIES.map(c => ({
+            user_id: user.id,
+            name: c.name,
+            type: c.type,
+            icon: c.icon,
+            color: c.color,
+            budget: c.budget
+        }));
+
+        const { data, error } = await supabase
+            .from('categories')
+            .insert(newCats)
+            .select();
+
+        if (!error && data) {
+            setCategories(data.map(mapCategory));
+        } else if (error) {
+            console.error('Error seeding categories:', error);
+        }
+    }, [setCategories]);
+
+    return { categories, loading, addCategory, updateCategory, deleteCategory, setCategories, seedInitialCategories };
 }
 
 // =====================================================
@@ -156,7 +213,8 @@ export function useTransactions() {
             .select('*')
             .order('date', { ascending: false });
 
-        if (!error && data) setTransactions(data);
+        if (error) console.error('Error fetching transactions:', error);
+        if (data) setTransactions(data.map(mapTransaction));
         setLoading(false);
     }, []);
 
@@ -168,30 +226,64 @@ export function useTransactions() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
+        // Map camelCase to snake_case for SQL
+        const sqlBody = {
+            user_id: user.id,
+            type: tx.type,
+            amount: tx.amount,
+            description: tx.description,
+            category: tx.category,
+            date: tx.date,
+            tags: tx.tags,
+            recurrent: tx.recurrent,
+            recurrence_frequency: tx.recurrenceFrequency,
+            payment_method: tx.paymentMethod,
+            notes: tx.notes
+        };
+
         const { data, error } = await supabase
             .from('transactions')
-            .insert([{ ...tx, user_id: user.id }])
+            .insert([sqlBody])
             .select()
             .single();
 
-        if (!error && data) {
-            setTransactions(prev => [data, ...prev]);
-            return data;
+        if (error) {
+            console.error('Error adding transaction:', error);
+            alert('Erro ao salvar transação: ' + error.message);
+            return null;
         }
-        return null;
+
+        const mapped = mapTransaction(data);
+        setTransactions(prev => [mapped, ...prev]);
+        return mapped;
     }, []);
 
     const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
+        // Map updates to snake_case
+        const sqlUpdates: any = { ...updates };
+        if (updates.recurrenceFrequency) sqlUpdates.recurrence_frequency = updates.recurrenceFrequency;
+        if (updates.paymentMethod) sqlUpdates.payment_method = updates.paymentMethod;
+
+        // Remove camelCase versions to avoid Supabase errors
+        delete sqlUpdates.recurrenceFrequency;
+        delete sqlUpdates.paymentMethod;
+        delete sqlUpdates.createdAt;
+        delete sqlUpdates.updatedAt;
+
         const { data, error } = await supabase
             .from('transactions')
-            .update({ ...updates, updated_at: new Date().toISOString() })
+            .update({ ...sqlUpdates, updated_at: new Date().toISOString() })
             .eq('id', id)
             .select()
             .single();
 
-        if (!error && data) {
-            setTransactions(prev => prev.map(t => t.id === id ? data : t));
+        if (error) {
+            console.error('Error updating transaction:', error);
+            return;
         }
+
+        const mapped = mapTransaction(data);
+        setTransactions(prev => prev.map(t => t.id === id ? mapped : t));
     }, []);
 
     const deleteTransaction = useCallback(async (id: string) => {
@@ -200,9 +292,8 @@ export function useTransactions() {
             .delete()
             .eq('id', id);
 
-        if (!error) {
-            setTransactions(prev => prev.filter(t => t.id !== id));
-        }
+        if (error) console.error('Error deleting transaction:', error);
+        else setTransactions(prev => prev.filter(t => t.id !== id));
     }, []);
 
     return { transactions, loading, addTransaction, updateTransaction, deleteTransaction, setTransactions };
@@ -221,7 +312,8 @@ export function useBudgets() {
             .from('budgets')
             .select('*');
 
-        if (!error && data) setBudgets(data);
+        if (error) console.error('Error fetching budgets:', error);
+        if (data) setBudgets(data.map(mapBudget));
         setLoading(false);
     }, []);
 
@@ -239,11 +331,14 @@ export function useBudgets() {
             .select()
             .single();
 
-        if (!error && data) {
-            setBudgets(prev => [...prev, data]);
-            return data;
+        if (error) {
+            console.error('Error adding budget:', error);
+            return null;
         }
-        return null;
+
+        const mapped = mapBudget(data);
+        setBudgets(prev => [...prev, mapped]);
+        return mapped;
     }, []);
 
     const updateBudget = useCallback(async (id: string, updates: Partial<Budget>) => {
@@ -254,9 +349,13 @@ export function useBudgets() {
             .select()
             .single();
 
-        if (!error && data) {
-            setBudgets(prev => prev.map(b => b.id === id ? data : b));
+        if (error) {
+            console.error('Error updating budget:', error);
+            return;
         }
+
+        const mapped = mapBudget(data);
+        setBudgets(prev => prev.map(b => b.id === id ? mapped : b));
     }, []);
 
     const deleteBudget = useCallback(async (id: string) => {
@@ -265,9 +364,8 @@ export function useBudgets() {
             .delete()
             .eq('id', id);
 
-        if (!error) {
-            setBudgets(prev => prev.filter(b => b.id !== id));
-        }
+        if (error) console.error('Error deleting budget:', error);
+        else setBudgets(prev => prev.filter(b => b.id !== id));
     }, []);
 
     const initBudgets = useCallback(async (categories: Category[]) => {
@@ -288,9 +386,8 @@ export function useBudgets() {
             .insert(newBudgets)
             .select();
 
-        if (!error && data) {
-            setBudgets(prev => [...prev, ...data]);
-        }
+        if (error) console.error('Error initializing budgets:', error);
+        if (data) setBudgets(prev => [...prev, ...data.map(mapBudget)]);
     }, []);
 
     return { budgets, loading, addBudget, updateBudget, deleteBudget, setBudgets, initBudgets };
@@ -309,7 +406,8 @@ export function useGoals() {
             .from('goals')
             .select('*');
 
-        if (!error && data) setGoals(data);
+        if (error) console.error('Error fetching goals:', error);
+        if (data) setGoals(data.map(mapGoal));
         setLoading(false);
     }, []);
 
@@ -327,11 +425,14 @@ export function useGoals() {
             .select()
             .single();
 
-        if (!error && data) {
-            setGoals(prev => [...prev, data]);
-            return data;
+        if (error) {
+            console.error('Error adding goal:', error);
+            return null;
         }
-        return null;
+
+        const mapped = mapGoal(data);
+        setGoals(prev => [...prev, mapped]);
+        return mapped;
     }, []);
 
     const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
@@ -342,9 +443,13 @@ export function useGoals() {
             .select()
             .single();
 
-        if (!error && data) {
-            setGoals(prev => prev.map(g => g.id === id ? data : g));
+        if (error) {
+            console.error('Error updating goal:', error);
+            return;
         }
+
+        const mapped = mapGoal(data);
+        setGoals(prev => prev.map(g => g.id === id ? mapped : g));
     }, []);
 
     const deleteGoal = useCallback(async (id: string) => {
@@ -353,9 +458,8 @@ export function useGoals() {
             .delete()
             .eq('id', id);
 
-        if (!error) {
-            setGoals(prev => prev.filter(g => g.id !== id));
-        }
+        if (error) console.error('Error deleting goal:', error);
+        else setGoals(prev => prev.filter(g => g.id !== id));
     }, []);
 
     const addContribution = useCallback(async (id: string, amount: number) => {
@@ -370,8 +474,10 @@ export function useGoals() {
             .select()
             .single();
 
-        if (!error && data) {
-            setGoals(prev => prev.map(g => g.id === id ? data : g));
+        if (error) console.error('Error adding contribution:', error);
+        if (data) {
+            const mapped = mapGoal(data);
+            setGoals(prev => prev.map(g => g.id === id ? mapped : g));
         }
     }, [goals]);
 
@@ -431,7 +537,6 @@ export function useFinancialSummary(transactions: Transaction[], month?: number,
         const expenseVariation = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
         const savingsVariation = prevSavings !== 0 ? ((savings - prevSavings) / Math.abs(prevSavings)) * 100 : 0;
 
-        // Sparkline data (last 6 months)
         const sparklineData = Array.from({ length: 6 }, (_, i) => {
             const m = subMonths(now, 5 - i);
             const key = getMonthKey(m);

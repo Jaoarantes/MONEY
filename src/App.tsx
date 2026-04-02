@@ -40,14 +40,20 @@ export default function App() {
 
   const { settings, setSettings, toggleTheme } = useSettings();
   const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
-  const { categories, loading: catLoading, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { categories, loading: catLoading, addCategory, updateCategory, deleteCategory, seedInitialCategories } = useCategories();
   const { budgets, loading: budLoading, addBudget, updateBudget, deleteBudget, initBudgets } = useBudgets();
   const { goals, loading: goalLoading, addContribution, addGoal, deleteGoal, updateGoal } = useGoals();
   const { toasts, addToast, removeToast } = useToast();
 
   const summary = useFinancialSummary(transactions);
 
-  // Initialize budgets if empty (seeding)
+  // Initialize categories and budgets if empty (seeding for new users)
+  useEffect(() => {
+    if (!catLoading && categories.length === 0) {
+      seedInitialCategories();
+    }
+  }, [categories.length, catLoading, seedInitialCategories]);
+
   useEffect(() => {
     if (!catLoading && !budLoading && categories.length > 0 && budgets.length === 0) {
       initBudgets(categories);
