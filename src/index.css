@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0A0A0F;
+  --color-bg-surface: #111118;
+  --color-bg-card: #1A1A24;
+  --color-bg-card-hover: #222233;
+  --color-bg-input: #15151F;
+  --color-accent: #6C63FF;
+  --color-accent-hover: #7B73FF;
+  --color-accent-glow: rgba(108, 99, 255, 0.3);
+  --color-positive: #00D9A6;
+  --color-positive-glow: rgba(0, 217, 166, 0.3);
+  --color-negative: #FF4D6D;
+  --color-negative-glow: rgba(255, 77, 109, 0.3);
+  --color-warning: #FFB830;
+  --color-warning-glow: rgba(255, 184, 48, 0.3);
+  --color-text-primary: #F1F1F6;
+  --color-text-secondary: #8888A0;
+  --color-text-muted: #55556A;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-light: rgba(255, 255, 255, 0.1);
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'Space Grotesk', monospace;
+}
+
+/* ==================== BASE ==================== */
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-text-muted);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary);
+  }
+}
+
+/* ==================== GLASSMORPHISM ==================== */
+
+.glass {
+  background: rgba(26, 26, 36, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.glass-strong {
+  background: rgba(26, 26, 36, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border-light);
+  border-radius: 16px;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(26, 26, 36, 0.7), rgba(17, 17, 24, 0.9));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--color-border-light);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ==================== KPI CARD GLOWS ==================== */
+
+.glow-accent {
+  box-shadow: 0 0 20px var(--color-accent-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.glow-positive {
+  box-shadow: 0 0 20px var(--color-positive-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.glow-negative {
+  box-shadow: 0 0 20px var(--color-negative-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.glow-warning {
+  box-shadow: 0 0 20px var(--color-warning-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-bg-card) 25%, var(--color-bg-card-hover) 50%, var(--color-bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ==================== CHART TOOLTIP ==================== */
+
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.custom-tooltip {
+  background: rgba(17, 17, 24, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-light) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ==================== FONT NUMBERS ==================== */
+
+.font-numbers {
+  font-family: 'Space Grotesk', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================== LIGHT THEME ==================== */
+
+.theme-light {
+  --color-bg-primary: #F5F5FA;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-hover: #F0F0F5;
+  --color-bg-input: #F0F0F5;
+  --color-text-primary: #1A1A2E;
+  --color-text-secondary: #6B6B80;
+  --color-text-muted: #9999AA;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-light: rgba(0, 0, 0, 0.12);
+}
+
+.theme-light .glass {
+  background: rgba(255, 255, 255, 0.7);
+}
+.theme-light .glass-strong {
+  background: rgba(255, 255, 255, 0.9);
+}
+.theme-light .glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(245, 245, 250, 0.95));
+}
+.theme-light .glow-accent {
+  box-shadow: 0 0 20px rgba(108, 99, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.theme-light .glow-positive {
+  box-shadow: 0 0 20px rgba(0, 217, 166, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.theme-light .glow-negative {
+  box-shadow: 0 0 20px rgba(255, 77, 109, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.theme-light .glow-warning {
+  box-shadow: 0 0 20px rgba(255, 184, 48, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== PRINT ==================== */
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
