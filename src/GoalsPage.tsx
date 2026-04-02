@@ -11,7 +11,7 @@ import type { Goal } from './types';
 
 interface GoalsPageProps {
     goals: Goal[];
-    onAddGoal: (g: Omit<Goal, 'id'>) => void;
+    onAddGoal: (g: Omit<Goal, 'id' | 'user_id'>) => void;
     onUpdateGoal: (id: string, g: Partial<Goal>) => void;
     onDeleteGoal: (id: string) => void;
     onAddContribution: (id: string, amount: number) => void;

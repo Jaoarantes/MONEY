@@ -1,44 +1,18 @@
 // =====================================================
-// HOOKS — All custom hooks for the finance app
+// HOOKS — Supabase SQL Persistence Layer
 // =====================================================
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { v4 as uuid } from 'uuid';
-import { format, subMonths, startOfMonth, endOfMonth, parseISO, isWithinInterval } from 'date-fns';
-import type { Transaction, Category, Goal, Budget, AppSettings, ToastMessage } from './types';
-import { DEFAULT_CATEGORIES, generateSeedTransactions, generateSeedGoals, generateSeedBudgets } from './seedData';
+import { supabase } from './supabase';
+import {
+    subMonths, startOfMonth, endOfMonth,
+    parseISO, isWithinInterval
+} from 'date-fns';
+import type {
+    Transaction, Category, Goal, Budget,
+    AppSettings, ToastMessage
+} from './types';
 import { getMonthKey } from './utils';
-
-// =====================================================
-// useStorage<T> — typed localStorage wrapper
-// =====================================================
-
-export function useStorage<T>(key: string, defaultValue: T): [T, (val: T | ((prev: T) => T)) => void] {
-    const [value, setValue] = useState<T>(() => {
-        try {
-            const stored = localStorage.getItem(key);
-            if (stored !== null) {
-                return JSON.parse(stored) as T;
-            }
-        } catch {
-            // ignore parse errors
-        }
-        return defaultValue;
-    });
-
-    const setStoredValue = useCallback(
-        (val: T | ((prev: T) => T)) => {
-            setValue((prev) => {
-                const next = typeof val === 'function' ? (val as (p: T) => T)(prev) : val;
-                localStorage.setItem(key, JSON.stringify(next));
-                return next;
-            });
-        },
-        [key]
-    );
-
-    return [value, setStoredValue];
-}
 
 // =====================================================
 // useToast — notification system
@@ -48,7 +22,7 @@ export function useToast() {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
     const addToast = useCallback((type: ToastMessage['type'], message: string) => {
-        const id = uuid();
+        const id = crypto.randomUUID();
         setToasts((prev) => [...prev, { id, type, message }]);
         setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -63,19 +37,30 @@ export function useToast() {
 }
 
 // =====================================================
-// useSettings — app settings management
+// useSettings — app settings management (remains LocalStorage)
 // =====================================================
 
 export function useSettings() {
-    const [storedSettings, setSettings] = useStorage<AppSettings>('app-settings', {
-        currency: 'BRL',
-        locale: 'pt-BR',
-        theme: 'dark',
-        monthStart: 1,
-        paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto'],
+    const [storedSettings, setStoredSettings] = useState<AppSettings>(() => {
+        const stored = localStorage.getItem('app-settings');
+        return stored ? JSON.parse(stored) : {
+            currency: 'BRL',
+            locale: 'pt-BR',
+            theme: 'dark',
+            monthStart: 1,
+            paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto']
+        };
     });
 
-    // Ensure paymentMethods exists (defensive for existing users)
+    const setSettings = useCallback((val: AppSettings | ((prev: AppSettings) => AppSettings)) => {
+        setStoredSettings(prev => {
+            const next = typeof val === 'function' ? (val as any)(prev) : val;
+            localStorage.setItem('app-settings', JSON.stringify(next));
+            return next;
+        });
+    }, []);
+
+    // Ensure paymentMethods exists
     const settings = {
         ...storedSettings,
         paymentMethods: storedSettings.paymentMethods || ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto']
@@ -92,197 +77,309 @@ export function useSettings() {
 }
 
 // =====================================================
-// useCategories — CRUD for categories
+// useCategories — CRUD for categories (Supabase)
 // =====================================================
 
 export function useCategories() {
-    const [categories, setCategories] = useStorage<Category[]>('categories', []);
-    const [initialized, setInitialized] = useStorage<boolean>('categories-init', false);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchCategories = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('categories')
+            .select('*')
+            .order('name');
+
+        if (!error && data) setCategories(data);
+        setLoading(false);
+    }, []);
 
     useEffect(() => {
-        if (!initialized && categories.length === 0) {
-            setCategories(DEFAULT_CATEGORIES);
-            setInitialized(true);
+        fetchCategories();
+    }, [fetchCategories]);
+
+    const addCategory = useCallback(async (cat: Omit<Category, 'id' | 'user_id'>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('categories')
+            .insert([{ ...cat, user_id: user.id }])
+            .select()
+            .single();
+
+        if (!error && data) {
+            setCategories(prev => [...prev, data]);
+            return data;
         }
-    }, [initialized, categories.length, setCategories, setInitialized]);
+        return null;
+    }, []);
 
-    const addCategory = useCallback(
-        (cat: Omit<Category, 'id'>) => {
-            const newCat: Category = { ...cat, id: uuid() };
-            setCategories((prev) => [...prev, newCat]);
-            return newCat;
-        },
-        [setCategories]
-    );
+    const updateCategory = useCallback(async (id: string, updates: Partial<Category>) => {
+        const { data, error } = await supabase
+            .from('categories')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
-    const updateCategory = useCallback(
-        (id: string, updates: Partial<Category>) => {
-            setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
-        },
-        [setCategories]
-    );
+        if (!error && data) {
+            setCategories(prev => prev.map(c => c.id === id ? data : c));
+        }
+    }, []);
 
-    const deleteCategory = useCallback(
-        (id: string) => {
-            setCategories((prev) => prev.filter((c) => c.id !== id));
-        },
-        [setCategories]
-    );
+    const deleteCategory = useCallback(async (id: string) => {
+        const { error } = await supabase
+            .from('categories')
+            .delete()
+            .eq('id', id);
 
-    const getCategoryById = useCallback(
-        (id: string) => categories.find((c) => c.id === id),
-        [categories]
-    );
+        if (!error) {
+            setCategories(prev => prev.filter(c => c.id !== id));
+        }
+    }, []);
 
-    return { categories, addCategory, updateCategory, deleteCategory, getCategoryById, setCategories };
+    return { categories, loading, addCategory, updateCategory, deleteCategory, setCategories };
 }
 
 // =====================================================
-// useTransactions — CRUD for transactions
+// useTransactions — CRUD for transactions (Supabase)
 // =====================================================
 
 export function useTransactions() {
-    const [transactions, setTransactions] = useStorage<Transaction[]>('transactions', []);
-    const [initialized, setInitialized] = useStorage<boolean>('transactions-init', false);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchTransactions = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (!error && data) setTransactions(data);
+        setLoading(false);
+    }, []);
 
     useEffect(() => {
-        if (!initialized && transactions.length === 0) {
-            setTransactions(generateSeedTransactions());
-            setInitialized(true);
+        fetchTransactions();
+    }, [fetchTransactions]);
+
+    const addTransaction = useCallback(async (tx: Omit<Transaction, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert([{ ...tx, user_id: user.id }])
+            .select()
+            .single();
+
+        if (!error && data) {
+            setTransactions(prev => [data, ...prev]);
+            return data;
         }
-    }, [initialized, transactions.length, setTransactions, setInitialized]);
+        return null;
+    }, []);
 
-    const addTransaction = useCallback(
-        (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
-            const now = new Date().toISOString();
-            const newTx: Transaction = { ...tx, id: uuid(), createdAt: now, updatedAt: now };
-            setTransactions((prev) => [newTx, ...prev]);
-            return newTx;
-        },
-        [setTransactions]
-    );
+    const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
+        const { data, error } = await supabase
+            .from('transactions')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
 
-    const updateTransaction = useCallback(
-        (id: string, updates: Partial<Transaction>) => {
-            setTransactions((prev) =>
-                prev.map((t) =>
-                    t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
-                )
-            );
-        },
-        [setTransactions]
-    );
+        if (!error && data) {
+            setTransactions(prev => prev.map(t => t.id === id ? data : t));
+        }
+    }, []);
 
-    const deleteTransaction = useCallback(
-        (id: string) => {
-            setTransactions((prev) => prev.filter((t) => t.id !== id));
-        },
-        [setTransactions]
-    );
+    const deleteTransaction = useCallback(async (id: string) => {
+        const { error } = await supabase
+            .from('transactions')
+            .delete()
+            .eq('id', id);
 
-    return { transactions, addTransaction, updateTransaction, deleteTransaction, setTransactions };
+        if (!error) {
+            setTransactions(prev => prev.filter(t => t.id !== id));
+        }
+    }, []);
+
+    return { transactions, loading, addTransaction, updateTransaction, deleteTransaction, setTransactions };
 }
 
 // =====================================================
-// useBudgets — CRUD for budgets
+// useBudgets — CRUD for budgets (Supabase)
 // =====================================================
 
 export function useBudgets() {
-    const [budgets, setBudgets] = useStorage<Budget[]>('budgets', []);
-    const [initialized, setInitialized] = useStorage<boolean>('budgets-init', false);
+    const [budgets, setBudgets] = useState<Budget[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const initBudgets = useCallback(
-        (categories: Category[]) => {
-            if (!initialized && budgets.length === 0) {
-                setBudgets(generateSeedBudgets(categories));
-                setInitialized(true);
-            }
-        },
-        [initialized, budgets.length, setBudgets, setInitialized]
-    );
+    const fetchBudgets = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('budgets')
+            .select('*');
 
-    const addBudget = useCallback(
-        (b: Omit<Budget, 'id'>) => {
-            const newBudget: Budget = { ...b, id: uuid() };
-            setBudgets((prev) => [...prev, newBudget]);
-            return newBudget;
-        },
-        [setBudgets]
-    );
+        if (!error && data) setBudgets(data);
+        setLoading(false);
+    }, []);
 
-    const updateBudget = useCallback(
-        (id: string, updates: Partial<Budget>) => {
-            setBudgets((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
-        },
-        [setBudgets]
-    );
+    useEffect(() => {
+        fetchBudgets();
+    }, [fetchBudgets]);
 
-    const deleteBudget = useCallback(
-        (id: string) => {
-            setBudgets((prev) => prev.filter((b) => b.id !== id));
-        },
-        [setBudgets]
-    );
+    const addBudget = useCallback(async (b: Omit<Budget, 'id' | 'user_id'>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-    return { budgets, addBudget, updateBudget, deleteBudget, setBudgets, initBudgets };
+        const { data, error } = await supabase
+            .from('budgets')
+            .insert([{ ...b, user_id: user.id }])
+            .select()
+            .single();
+
+        if (!error && data) {
+            setBudgets(prev => [...prev, data]);
+            return data;
+        }
+        return null;
+    }, []);
+
+    const updateBudget = useCallback(async (id: string, updates: Partial<Budget>) => {
+        const { data, error } = await supabase
+            .from('budgets')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (!error && data) {
+            setBudgets(prev => prev.map(b => b.id === id ? data : b));
+        }
+    }, []);
+
+    const deleteBudget = useCallback(async (id: string) => {
+        const { error } = await supabase
+            .from('budgets')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            setBudgets(prev => prev.filter(b => b.id !== id));
+        }
+    }, []);
+
+    const initBudgets = useCallback(async (categories: Category[]) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const month = getMonthKey(new Date());
+        const newBudgets = categories.map(cat => ({
+            user_id: user.id,
+            category_id: cat.id,
+            month,
+            limit: 0,
+            spent: 0
+        }));
+
+        const { data, error } = await supabase
+            .from('budgets')
+            .insert(newBudgets)
+            .select();
+
+        if (!error && data) {
+            setBudgets(prev => [...prev, ...data]);
+        }
+    }, []);
+
+    return { budgets, loading, addBudget, updateBudget, deleteBudget, setBudgets, initBudgets };
 }
 
 // =====================================================
-// useGoals — CRUD for financial goals
+// useGoals — CRUD for goals (Supabase)
 // =====================================================
 
 export function useGoals() {
-    const [goals, setGoals] = useStorage<Goal[]>('goals', []);
-    const [initialized, setInitialized] = useStorage<boolean>('goals-init', false);
+    const [goals, setGoals] = useState<Goal[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchGoals = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('goals')
+            .select('*');
+
+        if (!error && data) setGoals(data);
+        setLoading(false);
+    }, []);
 
     useEffect(() => {
-        if (!initialized && goals.length === 0) {
-            setGoals(generateSeedGoals());
-            setInitialized(true);
+        fetchGoals();
+    }, [fetchGoals]);
+
+    const addGoal = useCallback(async (g: Omit<Goal, 'id' | 'user_id'>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('goals')
+            .insert([{ ...g, user_id: user.id }])
+            .select()
+            .single();
+
+        if (!error && data) {
+            setGoals(prev => [...prev, data]);
+            return data;
         }
-    }, [initialized, goals.length, setGoals, setInitialized]);
+        return null;
+    }, []);
 
-    const addGoal = useCallback(
-        (g: Omit<Goal, 'id'>) => {
-            const newGoal: Goal = { ...g, id: uuid() };
-            setGoals((prev) => [...prev, newGoal]);
-            return newGoal;
-        },
-        [setGoals]
-    );
+    const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
+        const { data, error } = await supabase
+            .from('goals')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
-    const updateGoal = useCallback(
-        (id: string, updates: Partial<Goal>) => {
-            setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...updates } : g)));
-        },
-        [setGoals]
-    );
+        if (!error && data) {
+            setGoals(prev => prev.map(g => g.id === id ? data : g));
+        }
+    }, []);
 
-    const deleteGoal = useCallback(
-        (id: string) => {
-            setGoals((prev) => prev.filter((g) => g.id !== id));
-        },
-        [setGoals]
-    );
+    const deleteGoal = useCallback(async (id: string) => {
+        const { error } = await supabase
+            .from('goals')
+            .delete()
+            .eq('id', id);
 
-    const addContribution = useCallback(
-        (id: string, amount: number) => {
-            setGoals((prev) =>
-                prev.map((g) =>
-                    g.id === id
-                        ? { ...g, currentAmount: Math.min(g.currentAmount + amount, g.targetAmount) }
-                        : g
-                )
-            );
-        },
-        [setGoals]
-    );
+        if (!error) {
+            setGoals(prev => prev.filter(g => g.id !== id));
+        }
+    }, []);
 
-    return { goals, addGoal, updateGoal, deleteGoal, addContribution, setGoals };
+    const addContribution = useCallback(async (id: string, amount: number) => {
+        const goal = goals.find(g => g.id === id);
+        if (!goal) return;
+
+        const newAmount = Math.min(goal.currentAmount + amount, goal.targetAmount);
+        const { data, error } = await supabase
+            .from('goals')
+            .update({ currentAmount: newAmount })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (!error && data) {
+            setGoals(prev => prev.map(g => g.id === id ? data : g));
+        }
+    }, [goals]);
+
+    return { goals, loading, addGoal, updateGoal, deleteGoal, addContribution, setGoals };
 }
 
 // =====================================================
-// useFinancialSummary — Computed KPIs
+// useFinancialSummary — Computed KPIs (Remains In-Memory)
 // =====================================================
 
 export function useFinancialSummary(transactions: Transaction[], month?: number, year?: number) {

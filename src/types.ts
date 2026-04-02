@@ -4,6 +4,7 @@
 
 export interface Transaction {
     id: string;
+    user_id: string;
     type: 'income' | 'expense';
     amount: number;
     description: string;
@@ -20,6 +21,7 @@ export interface Transaction {
 
 export interface Category {
     id: string;
+    user_id: string;
     name: string;
     type: 'income' | 'expense' | 'both';
     icon: string;
@@ -29,6 +31,7 @@ export interface Category {
 
 export interface Goal {
     id: string;
+    user_id: string;
     name: string;
     targetAmount: number;
     currentAmount: number;
@@ -39,6 +42,7 @@ export interface Goal {
 
 export interface Budget {
     id: string;
+    user_id: string;
     categoryId: string;
     month: string; // 'YYYY-MM'
     limit: number;

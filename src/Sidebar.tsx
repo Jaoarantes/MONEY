@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     LayoutDashboard, Receipt, PlusCircle, Target,
     BarChart3, Settings, PieChart, Menu, X,
-    Sun, Moon, ChevronRight, LogOut
+    Sun, Moon, ChevronRight, LogOut, User
 } from 'lucide-react';
 import { cn } from './utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +12,9 @@ interface SidebarProps {
     currentPage: PageName;
     onPageChange: (page: PageName) => void;
     settings: AppSettings;
+    userEmail?: string;
     onToggleTheme: () => void;
+    onLogout: () => void;
 }
 
 const MENU_ITEMS = [
@@ -26,7 +28,7 @@ const MENU_ITEMS = [
 ] as const;
 
 export const Sidebar: React.FC<SidebarProps> = ({
-    currentPage, onPageChange, settings, onToggleTheme
+    currentPage, onPageChange, settings, userEmail, onToggleTheme, onLogout
 }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -95,12 +97,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             </nav>
 
                             <div className="mt-auto pt-6 border-t border-border space-y-4">
+                                <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5">
+                                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                                        <User size={20} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-white truncate">{userEmail?.split('@')[0]}</p>
+                                        <p className="text-[10px] text-text-muted truncate">{userEmail}</p>
+                                    </div>
+                                </div>
                                 <button
                                     onClick={onToggleTheme}
                                     className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 text-text-secondary"
                                 >
                                     {settings.theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                                     <span>{settings.theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+                                </button>
+                                <button
+                                    onClick={onLogout}
+                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-negative/10 text-negative transition-all"
+                                >
+                                    <LogOut size={22} />
+                                    <span>Sair da Conta</span>
                                 </button>
                             </div>
                         </motion.div>
@@ -163,6 +181,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </nav>
 
                 <div className="p-4 border-t border-border space-y-2">
+                    {!isCollapsed && (
+                        <div className="flex items-center gap-3 p-3 mb-2 rounded-xl bg-white/5 group hover:bg-white/10 transition-all">
+                            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                                <User size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-white truncate">{userEmail?.split('@')[0]}</p>
+                                <p className="text-[10px] text-text-muted truncate">{userEmail}</p>
+                            </div>
+                        </div>
+                    )}
+
                     <button
                         onClick={onToggleTheme}
                         className={cn(
@@ -174,6 +204,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {settings.theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                         </div>
                         {!isCollapsed && <span>{settings.theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
+                    </button>
+
+                    <button
+                        onClick={onLogout}
+                        className={cn(
+                            "w-full flex items-center h-12 rounded-xl hover:bg-negative/10 text-negative transition-all",
+                            isCollapsed && "justify-center"
+                        )}
+                    >
+                        <div className="min-w-[56px] flex items-center justify-center">
+                            <LogOut size={22} />
+                        </div>
+                        {!isCollapsed && <span>Sair</span>}
                     </button>
 
                     <button

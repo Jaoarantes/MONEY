@@ -12,7 +12,7 @@ interface BudgetsPageProps {
     budgets: Budget[];
     categories: Category[];
     transactions: Transaction[];
-    onAddBudget: (b: Omit<Budget, 'id'>) => void;
+    onAddBudget: (b: Omit<Budget, 'id' | 'user_id'>) => void;
     onUpdateBudget: (id: string, b: Partial<Budget>) => void;
     onDeleteBudget: (id: string) => void;
 }

@@ -7,23 +7,24 @@ import { subDays, subMonths, format } from 'date-fns';
 import type { Transaction, Category, Goal, Budget } from './types';
 
 const now = new Date();
+const DUMMY_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 export const DEFAULT_CATEGORIES: Category[] = [
-    { id: uuid(), name: 'Alimentação', type: 'expense', icon: 'UtensilsCrossed', color: '#FF6B6B', budget: 1200 },
-    { id: uuid(), name: 'Moradia', type: 'expense', icon: 'Home', color: '#4ECDC4', budget: 2500 },
-    { id: uuid(), name: 'Transporte', type: 'expense', icon: 'Car', color: '#45B7D1', budget: 600 },
-    { id: uuid(), name: 'Saúde', type: 'expense', icon: 'Heart', color: '#FF4D6D', budget: 400 },
-    { id: uuid(), name: 'Lazer', type: 'expense', icon: 'Gamepad2', color: '#A855F7', budget: 500 },
-    { id: uuid(), name: 'Educação', type: 'expense', icon: 'GraduationCap', color: '#6C63FF', budget: 300 },
-    { id: uuid(), name: 'Vestuário', type: 'expense', icon: 'Shirt', color: '#F472B6', budget: 350 },
-    { id: uuid(), name: 'Assinaturas', type: 'expense', icon: 'CreditCard', color: '#FB923C', budget: 200 },
-    { id: uuid(), name: 'Mercado', type: 'expense', icon: 'ShoppingCart', color: '#34D399', budget: 800 },
-    { id: uuid(), name: 'Contas', type: 'expense', icon: 'Receipt', color: '#FBBF24', budget: 600 },
-    { id: uuid(), name: 'Salário', type: 'income', icon: 'Banknote', color: '#00D9A6' },
-    { id: uuid(), name: 'Freelance', type: 'income', icon: 'Laptop', color: '#6C63FF' },
-    { id: uuid(), name: 'Investimentos', type: 'income', icon: 'TrendingUp', color: '#FFB830' },
-    { id: uuid(), name: 'Presente', type: 'both', icon: 'Gift', color: '#F472B6' },
-    { id: uuid(), name: 'Outros', type: 'both', icon: 'MoreHorizontal', color: '#8888A0' },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Alimentação', type: 'expense', icon: 'UtensilsCrossed', color: '#FF6B6B', budget: 1200 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Moradia', type: 'expense', icon: 'Home', color: '#4ECDC4', budget: 2500 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Transporte', type: 'expense', icon: 'Car', color: '#45B7D1', budget: 600 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Saúde', type: 'expense', icon: 'Heart', color: '#FF4D6D', budget: 400 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Lazer', type: 'expense', icon: 'Gamepad2', color: '#A855F7', budget: 500 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Educação', type: 'expense', icon: 'GraduationCap', color: '#6C63FF', budget: 300 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Vestuário', type: 'expense', icon: 'Shirt', color: '#F472B6', budget: 350 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Assinaturas', type: 'expense', icon: 'CreditCard', color: '#FB923C', budget: 200 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Mercado', type: 'expense', icon: 'ShoppingCart', color: '#34D399', budget: 800 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Contas', type: 'expense', icon: 'Receipt', color: '#FBBF24', budget: 600 },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Salário', type: 'income', icon: 'Banknote', color: '#00D9A6' },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Freelance', type: 'income', icon: 'Laptop', color: '#6C63FF' },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Investimentos', type: 'income', icon: 'TrendingUp', color: '#FFB830' },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Presente', type: 'both', icon: 'Gift', color: '#F472B6' },
+    { id: uuid(), user_id: DUMMY_USER_ID, name: 'Outros', type: 'both', icon: 'MoreHorizontal', color: '#8888A0' },
 ];
 
 function randomAmount(min: number, max: number): number {
@@ -66,6 +67,7 @@ export function generateSeedTransactions(): Transaction[] {
 
         transactions.push({
             id: uuid(),
+            user_id: DUMMY_USER_ID,
             type: isIncome ? 'income' : 'expense',
             amount: isIncome ? randomAmount(2000, 8000) : randomAmount(15, 1500),
             description: desc,
@@ -88,6 +90,7 @@ export function generateSeedGoals(): Goal[] {
     return [
         {
             id: uuid(),
+            user_id: DUMMY_USER_ID,
             name: 'Fundo de Emergência',
             targetAmount: 15000,
             currentAmount: 6800,
@@ -97,6 +100,7 @@ export function generateSeedGoals(): Goal[] {
         },
         {
             id: uuid(),
+            user_id: DUMMY_USER_ID,
             name: 'Viagem de Férias',
             targetAmount: 8000,
             currentAmount: 3200,
@@ -113,6 +117,7 @@ export function generateSeedBudgets(categories: Category[]): Budget[] {
         .filter(c => c.type === 'expense' && c.budget)
         .map(c => ({
             id: uuid(),
+            user_id: DUMMY_USER_ID,
             categoryId: c.id,
             month,
             limit: c.budget ?? 500,

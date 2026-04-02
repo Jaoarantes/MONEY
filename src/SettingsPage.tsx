@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
     Settings as SettingsIcon, Trash2, Download,
-    Upload, Moon, Sun, Calendar, Plus,
+    Moon, Sun, Calendar, Plus,
     AlertCircle, RefreshCcw, CreditCard, Tag,
-    Edit2, ChevronRight, Check, X, Palette
+    Edit2, Check, Palette, Shield
 } from 'lucide-react';
 import { cn } from './utils';
 import type { Category, AppSettings } from './types';
@@ -12,14 +12,17 @@ interface SettingsPageProps {
     settings: AppSettings;
     categories: Category[];
     onUpdateSettings: (s: AppSettings) => void;
-    onUpdateCategories: (cats: Category[]) => void;
+    onAddCategory: (cat: Omit<Category, 'id' | 'user_id'>) => Promise<any>;
+    onUpdateCategory: (id: string, updates: Partial<Category>) => Promise<any>;
+    onDeleteCategory: (id: string) => Promise<any>;
     onExportData: () => void;
     onImportData: (data: string) => void;
     onResetData: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
-    settings, categories, onUpdateSettings, onUpdateCategories,
+    settings, categories, onUpdateSettings,
+    onAddCategory, onUpdateCategory, onDeleteCategory,
     onExportData, onImportData, onResetData
 }) => {
     const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -35,21 +38,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'payments' | 'data'>('general');
 
     // HANDLERS
-    const handleAddCategory = () => {
+    const handleAddCategory = async () => {
         if (!newCatName.trim()) return;
-        const newCat: Category = {
-            id: crypto.randomUUID(),
+        await onAddCategory({
             name: newCatName,
             type: newCatType,
             icon: 'Tag',
             color: newCatColor
-        };
-        onUpdateCategories([...categories, newCat]);
+        });
         setNewCatName('');
     };
 
-    const handleUpdateCategory = (id: string, updates: Partial<Category>) => {
-        onUpdateCategories(categories.map(c => c.id === id ? { ...c, ...updates } : c));
+    const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
+        await onUpdateCategory(id, updates);
     };
 
     const handleAddPaymentMethod = () => {
@@ -77,10 +78,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             ...settings,
             paymentMethods: settings.paymentMethods.filter(m => m !== method)
         });
-    };
-
-    const handleDeleteCategory = (id: string) => {
-        onUpdateCategories(categories.filter(c => c.id !== id));
     };
 
     return (
@@ -231,7 +228,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                             disabled={!newCatName.trim()}
                             className="w-full py-4 bg-accent text-white font-bold rounded-2xl shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
                         >
-                            ADICIONAR CATEGORIA
+                            ADICIONAR CATEGORIA NO BANCO (SQL)
                         </button>
                     </div>
 
@@ -264,7 +261,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                                 <option value="both">Misto</option>
                                             </select>
                                         </div>
-                                        <button onClick={() => setEditingCatId(null)} className="w-full py-1.5 bg-accent text-white rounded-lg text-xs font-bold">FEITO</button>
+                                        <button onClick={() => setEditingCatId(null)} className="w-full py-1.5 bg-accent text-white rounded-lg text-xs font-bold">SALVAR NO SQL</button>
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-between">
@@ -285,7 +282,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                         </div>
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => setEditingCatId(cat.id)} className="p-2 hover:bg-white/5 rounded-lg transition-all text-text-secondary"><Edit2 size={16} /></button>
-                                            <button onClick={() => handleDeleteCategory(cat.id)} className="p-2 hover:bg-negative/10 text-negative rounded-lg transition-all"><Trash2 size={16} /></button>
+                                            <button onClick={() => onDeleteCategory(cat.id)} className="p-2 hover:bg-negative/10 text-negative rounded-lg transition-all"><Trash2 size={16} /></button>
                                         </div>
                                     </div>
                                 )}
@@ -354,7 +351,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 <div className="glass-card p-8 space-y-8">
                     <div className="flex items-center gap-3 border-b border-border pb-4">
                         <RefreshCcw size={24} className="text-positive" />
-                        <h2 className="text-xl font-bold">Gestão de Dados Local</h2>
+                        <h2 className="text-xl font-bold">Sincronização Cloud (Supabase)</h2>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -366,33 +363,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 <Download size={24} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold">Baixar Backup (JSON)</h3>
-                                <p className="text-xs text-text-muted">Salve todos os seus lançamentos offline.</p>
+                                <h3 className="font-bold">Baixar SQL Backup (JSON)</h3>
+                                <p className="text-xs text-text-muted">Exporta todos os dados do banco de dados.</p>
                             </div>
                         </button>
 
-                        <label className="flex items-center gap-4 p-6 bg-white/5 border border-border rounded-2xl hover:bg-white/10 transition-all group cursor-pointer">
-                            <div className="p-3 rounded-xl bg-positive/20 text-positive group-hover:scale-110 transition-transform">
-                                <Upload size={24} />
+                        <div className="flex items-center gap-4 p-6 bg-white/5 border border-border rounded-2xl opacity-50 cursor-not-allowed">
+                            <div className="p-3 rounded-xl bg-positive/20 text-positive">
+                                <Shield size={24} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold">Restaurar Backup</h3>
-                                <p className="text-xs text-text-muted">Suba um arquivo .json anteriormente baixado.</p>
+                                <h3 className="font-bold">Backup Automático Ativo</h3>
+                                <p className="text-xs text-text-muted">Seus dados são salvos em tempo real.</p>
                             </div>
-                            <input
-                                type="file"
-                                className="hidden"
-                                accept=".json"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        const reader = new FileReader();
-                                        reader.onload = (ev) => onImportData(ev.target?.result as string);
-                                        reader.readAsText(file);
-                                    }
-                                }}
-                            />
-                        </label>
+                        </div>
 
                         <button
                             onClick={() => setIsResetConfirm(true)}
@@ -400,8 +384,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         >
                             <Trash2 size={24} className="group-hover:rotate-12 transition-transform" />
                             <div className="text-left">
-                                <h3 className="font-bold">Limpar Todo o Banco de Dados</h3>
-                                <p className="text-xs opacity-70">Aviso: Ação irreversível que apaga 100% dos dados locais.</p>
+                                <h3 className="font-bold">Limpar Configurações Locais</h3>
+                                <p className="text-xs opacity-70">Remove apenas configurações do navegador (tema, dia de início).</p>
                             </div>
                         </button>
                     </div>
@@ -418,15 +402,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         </div>
                         <div className="space-y-4">
                             <h2 className="text-2xl font-bold">Você tem certeza?</h2>
-                            <p className="text-text-secondary">Esta ação é <b>permanente</b>. Todos os seus dados de transações, orçamentos, metas e configurações serão deletados do armazenamento do seu navegador.</p>
+                            <p className="text-text-secondary">Esta ação limpará as configurações salvas neste navegador. Os dados no SQL (Supabase) permanecerão intactos.</p>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <button onClick={() => setIsResetConfirm(false)} className="flex-1 py-4 font-bold hover:bg-white/5 rounded-2xl transition-all">MANTER DADOS</button>
+                            <button onClick={() => setIsResetConfirm(false)} className="flex-1 py-4 font-bold hover:bg-white/5 rounded-2xl transition-all">MANTER</button>
                             <button
                                 onClick={() => { onResetData(); setIsResetConfirm(false); }}
                                 className="flex-1 py-4 bg-negative text-white font-bold rounded-2xl shadow-2xl shadow-negative/50 hover:bg-red-600 transition-all"
                             >
-                                SIM, APAGAR
+                                LIMPAR LOCAL
                             </button>
                         </div>
                     </div>

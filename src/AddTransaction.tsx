@@ -11,7 +11,7 @@ import type { Category, Transaction } from './types';
 interface AddTransactionProps {
     categories: Category[];
     paymentMethods: string[];
-    onSubmit: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
+    onSubmit: (tx: Omit<Transaction, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => void;
     onCancel?: () => void;
     initialData?: Transaction;
 }

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { supabase } from './supabase';
+import { AuthPage } from './AuthPage';
 import { Sidebar } from './Sidebar';
 import { Dashboard } from './Dashboard';
 import { TransactionsPage } from './TransactionsPage';
@@ -7,7 +9,7 @@ import { BudgetsPage } from './BudgetsPage';
 import { GoalsPage } from './GoalsPage';
 import { ReportsPage } from './ReportsPage';
 import { SettingsPage } from './SettingsPage';
-import { ToastContainer } from './components';
+import { ToastContainer, Loader } from './components';
 import {
   useTransactions, useCategories, useBudgets,
   useGoals, useFinancialSummary, useSettings, useToast
@@ -16,29 +18,48 @@ import type { PageName, Transaction } from './types';
 import { cn } from './utils';
 
 export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<PageName>('dashboard');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const { settings, setSettings, toggleTheme } = useSettings();
-  const { transactions, addTransaction, updateTransaction, deleteTransaction, setTransactions } = useTransactions();
-  const { categories, setCategories } = useCategories();
-  const { budgets, addBudget, updateBudget, deleteBudget, setBudgets, initBudgets } = useBudgets();
-  const { goals, addContribution, addGoal, deleteGoal, updateGoal, setGoals } = useGoals();
+  const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
+  const { categories, loading: catLoading, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { budgets, loading: budLoading, addBudget, updateBudget, deleteBudget, initBudgets } = useBudgets();
+  const { goals, loading: goalLoading, addContribution, addGoal, deleteGoal, updateGoal } = useGoals();
   const { toasts, addToast, removeToast } = useToast();
 
   const summary = useFinancialSummary(transactions);
 
   // Initialize budgets if empty (seeding)
   useEffect(() => {
-    if (categories.length > 0 && budgets.length === 0) {
+    if (!catLoading && !budLoading && categories.length > 0 && budgets.length === 0) {
       initBudgets(categories);
     }
-  }, [categories, budgets.length, initBudgets]);
+  }, [categories, budgets.length, initBudgets, catLoading, budLoading]);
 
   // Handle data storage resets / imports
-  const handleReset = () => {
+  const handleReset = async () => {
+    // For Supabase, we should probably delete from tables. 
+    // For now, keep it simple or just clear local storage settings.
     localStorage.clear();
-    window.location.reload();
+    addToast('info', 'Configurações locais resetadas. Para apagar dados do banco, use o painel Supabase.');
   };
 
   const handleExport = () => {
@@ -48,46 +69,36 @@ export default function App() {
       budgets,
       goals,
       settings,
-      version: '1.0.0',
+      version: '2.0.0 (SQL)',
       exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `money_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `money_backup_sql_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     addToast('success', 'Backup exportado com sucesso!');
   };
 
-  const handleImport = (jsonStr: string) => {
-    try {
-      const data = JSON.parse(jsonStr);
-      if (data.transactions) setTransactions(data.transactions);
-      if (data.categories) setCategories(data.categories);
-      if (data.budgets) setBudgets(data.budgets);
-      if (data.goals) setGoals(data.goals);
-      if (data.settings) setSettings(data.settings);
-      addToast('success', 'Dados importados com sucesso!');
-    } catch (e) {
-      addToast('error', 'Falha ao importar arquivo JSON inválido.');
-    }
-  };
-
-  const handleAddTransaction = (tx: any) => {
+  const handleAddTransaction = async (tx: any) => {
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, tx);
+      await updateTransaction(editingTransaction.id, tx);
       addToast('success', 'Lançamento atualizado!');
       setEditingTransaction(null);
       setCurrentPage('transactions');
     } else {
-      addTransaction(tx);
+      await addTransaction(tx);
       addToast('success', 'Lançamento registrado!');
       setCurrentPage('dashboard');
     }
   };
 
   const renderPage = () => {
+    if (txLoading || catLoading || budLoading || goalLoading) {
+      return <div className="flex h-[60vh] items-center justify-center"><Loader /></div>;
+    }
+
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard summary={summary} transactions={transactions} categories={categories} goals={goals} budgets={budgets} />;
@@ -139,9 +150,11 @@ export default function App() {
             settings={settings}
             categories={categories}
             onUpdateSettings={setSettings}
-            onUpdateCategories={setCategories}
+            onAddCategory={addCategory}
+            onUpdateCategory={updateCategory}
+            onDeleteCategory={deleteCategory}
             onExportData={handleExport}
-            onImportData={handleImport}
+            onImportData={(str) => addToast('warning', 'Importação direta para SQL ainda em desenvolvimento.')}
             onResetData={handleReset}
           />
         );
@@ -150,26 +163,28 @@ export default function App() {
     }
   };
 
+  if (authLoading) return <div className="min-h-screen bg-bg-primary flex items-center justify-center"><Loader /></div>;
+  if (!session) return <AuthPage />;
+
   return (
     <div className={cn(
       "min-h-screen flex bg-bg-primary text-text-primary transition-colors duration-300",
       settings.theme === 'light' ? 'theme-light' : ''
     )}>
-      {/* Sidebar - Fixed Positioned in component */}
       <Sidebar
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         settings={settings}
+        userEmail={session.user.email}
         onToggleTheme={toggleTheme}
+        onLogout={() => supabase.auth.signOut()}
       />
 
-      {/* Main Content */}
       <main className="flex-1 min-w-0 flex flex-col pt-16 lg:pt-0">
         <div className="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full">
           {renderPage()}
         </div>
 
-        {/* Footer */}
         <footer className="p-8 mt-12 border-t border-border/50 text-center text-text-muted text-xs no-print">
           <p>© 2026 Money — Luxury Dark Finance Interface. Build for Enterprise Scale.</p>
         </footer>
