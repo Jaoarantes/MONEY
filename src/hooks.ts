@@ -20,7 +20,9 @@ import { getMonthKey } from './utils';
 
 const mapTransaction = (sql: any): Transaction => ({
     ...sql,
-    categoryId: sql.category_id,
+    amount: Number(sql.amount),
+    categoryId: sql.category || sql.category_id || sql.categoryId,
+    paymentMethod: sql.payment_method || sql.paymentMethod,
     createdAt: sql.created_at,
     updatedAt: sql.updated_at
 });
@@ -32,13 +34,16 @@ const mapCategory = (sql: any): Category => ({
 
 const mapGoal = (sql: any): Goal => ({
     ...sql,
-    targetAmount: sql.target_amount,
-    currentAmount: sql.current_amount,
+    targetAmount: Number(sql.target_amount),
+    currentAmount: Number(sql.current_amount),
+    categoryId: sql.category || sql.category_id,
     createdAt: sql.created_at
 });
 
 const mapBudget = (sql: any): Budget => ({
     ...sql,
+    limit: Number(sql.limit),
+    spent: Number(sql.spent || 0),
     categoryId: sql.category_id,
     createdAt: sql.created_at
 });
@@ -260,9 +265,8 @@ export function useTransactions() {
             type: tx.type,
             amount: tx.amount,
             description: tx.description,
-            category_id: tx.categoryId,
+            category: tx.categoryId,
             date: tx.date,
-            tags: tx.tags,
             recurrent: tx.recurrent,
             recurrence_frequency: tx.recurrenceFrequency,
             payment_method: tx.paymentMethod,
@@ -278,26 +282,26 @@ export function useTransactions() {
         if (error) {
             console.error('Error adding transaction:', error);
             alert('Erro ao salvar transação: ' + error.message);
-            return null;
+            return false;
         }
 
         const mapped = mapTransaction(data);
         setTransactions(prev => [mapped, ...prev]);
-        return mapped;
+        return true;
     }, []);
 
     const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
-        const sqlUpdates: any = { ...updates };
-        if (updates.categoryId) sqlUpdates.category_id = updates.categoryId;
-        if (updates.recurrenceFrequency) sqlUpdates.recurrence_frequency = updates.recurrenceFrequency;
-        if (updates.paymentMethod) sqlUpdates.payment_method = updates.paymentMethod;
-
-        // Clear camelCase variants
-        delete sqlUpdates.categoryId;
-        delete sqlUpdates.recurrenceFrequency;
-        delete sqlUpdates.paymentMethod;
-        delete sqlUpdates.createdAt;
-        delete sqlUpdates.updatedAt;
+        // Explicitly map allowed fields to snake_case for Supabase
+        const sqlUpdates: any = {};
+        if (updates.type !== undefined) sqlUpdates.type = updates.type;
+        if (updates.amount !== undefined) sqlUpdates.amount = updates.amount;
+        if (updates.description !== undefined) sqlUpdates.description = updates.description;
+        if (updates.categoryId !== undefined) sqlUpdates.category = updates.categoryId;
+        if (updates.date !== undefined) sqlUpdates.date = updates.date;
+        if (updates.recurrent !== undefined) sqlUpdates.recurrent = updates.recurrent;
+        if (updates.recurrenceFrequency !== undefined) sqlUpdates.recurrence_frequency = updates.recurrenceFrequency;
+        if (updates.paymentMethod !== undefined) sqlUpdates.payment_method = updates.paymentMethod;
+        if (updates.notes !== undefined) sqlUpdates.notes = updates.notes;
 
         const { data, error } = await supabase
             .from('transactions')
@@ -308,11 +312,16 @@ export function useTransactions() {
 
         if (error) {
             console.error('Error updating transaction:', error);
-            return;
+            alert('Erro ao atualizar transação: ' + error.message);
+            return false;
         }
 
-        const mapped = mapTransaction(data);
-        setTransactions(prev => prev.map(t => t.id === id ? mapped : t));
+        if (data) {
+            const mapped = mapTransaction(data);
+            setTransactions(prev => prev.map(t => t.id === id ? mapped : t));
+            return true;
+        }
+        return false;
     }, []);
 
     const deleteTransaction = useCallback(async (id: string) => {
@@ -462,13 +471,15 @@ export function useGoals() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
+        const isValidUUID = g.categoryId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(g.categoryId);
+
         const sqlBody = {
             user_id: user.id,
             name: g.name,
             target_amount: g.targetAmount,
             current_amount: g.currentAmount,
             deadline: g.deadline,
-            category_id: g.categoryId,
+            category: isValidUUID ? g.categoryId : null,
             color: g.color
         };
 
@@ -492,7 +503,7 @@ export function useGoals() {
         const sqlUpdates: any = { ...updates };
         if (updates.targetAmount) sqlUpdates.target_amount = updates.targetAmount;
         if (updates.currentAmount) sqlUpdates.current_amount = updates.currentAmount;
-        if (updates.categoryId) sqlUpdates.category_id = updates.categoryId;
+        if (updates.categoryId) sqlUpdates.category = updates.categoryId;
 
         delete sqlUpdates.targetAmount;
         delete sqlUpdates.currentAmount;
@@ -532,7 +543,7 @@ export function useGoals() {
         const newAmount = Math.min(goal.currentAmount + amount, goal.targetAmount);
         const { data, error } = await supabase
             .from('goals')
-            .update({ currentAmount: newAmount })
+            .update({ current_amount: newAmount })
             .eq('id', id)
             .select()
             .single();

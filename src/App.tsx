@@ -84,14 +84,18 @@ export default function App() {
 
   const handleAddTransaction = async (tx: any) => {
     if (editingTransaction) {
-      await updateTransaction(editingTransaction.id, tx);
-      addToast('success', 'Lançamento atualizado!');
-      setEditingTransaction(null);
-      setCurrentPage('transactions');
+      const success = await updateTransaction(editingTransaction.id, tx);
+      if (success) {
+        addToast('success', 'Lançamento atualizado!');
+        setEditingTransaction(null);
+        setCurrentPage('transactions');
+      }
     } else {
-      await addTransaction(tx);
-      addToast('success', 'Lançamento registrado!');
-      setCurrentPage('dashboard');
+      const success = await addTransaction(tx);
+      if (success) {
+        addToast('success', 'Lançamento registrado!');
+        setCurrentPage('dashboard');
+      }
     }
   };
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     ArrowUp, ArrowDown, Calendar, Tag,
     CreditCard, FileText, Repeat, Save, Loader2,
-    CheckCircle2, Plus, X
+    CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, parseCurrencyInput, formatCurrencyInput } from './utils';
@@ -22,17 +22,22 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type || 'expense');
     const [amount, setAmount] = useState(initialData?.amount ? formatCurrencyInput(initialData.amount) : '0,00');
     const [description, setDescription] = useState(initialData?.description || '');
-    const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
+    const [categoryId, setCategoryId] = useState(initialData?.categoryId || categories[0]?.id || '');
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
     const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || paymentMethods[0] || 'Pix');
     const [recurrent, setRecurrent] = useState(initialData?.recurrent || false);
     const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>(initialData?.recurrenceFrequency || 'monthly');
     const [notes, setNotes] = useState(initialData?.notes || '');
-    const [tagInput, setTagInput] = useState('');
-    const [tags, setTags] = useState<string[]>(initialData?.tags || []);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    // Auto-select first category if none selected and categories load
+    React.useEffect(() => {
+        if (!categoryId && categories.length > 0) {
+            setCategoryId(categories[0].id);
+        }
+    }, [categories, categoryId]);
 
     const filteredCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -46,27 +51,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
         setAmount(formatCurrencyInput(val));
     };
 
-    const handleAddTag = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && tagInput.trim()) {
-            e.preventDefault();
-            if (!tags.includes(tagInput.trim())) {
-                setTags([...tags, tagInput.trim()]);
-            }
-            setTagInput('');
-        }
-    };
 
-    const handleRemoveTag = (tag: string) => {
-        setTags(tags.filter(t => t !== tag));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Simulate API delay
-        setTimeout(() => {
-            onSubmit({
+        try {
+            await onSubmit({
                 type,
                 amount: parseCurrencyInput(amount),
                 description,
@@ -75,10 +66,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                 paymentMethod,
                 recurrent,
                 recurrenceFrequency: recurrent ? frequency : undefined,
-                notes,
-                tags
+                notes
             });
-            setIsSubmitting(false);
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000);
 
@@ -86,10 +75,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                 // Reset form if creating new
                 setDescription('');
                 setAmount('0,00');
-                setTags([]);
                 setNotes('');
             }
-        }, 600);
+        } catch (err) {
+            console.error('Submit error:', err);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -108,7 +100,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         type="button"
                         onClick={() => {
                             setType('income');
-                            setCategoryId(categories.find(c => c.type === 'income')?.id || '');
                         }}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
@@ -122,7 +113,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         type="button"
                         onClick={() => {
                             setType('expense');
-                            setCategoryId(categories.find(c => c.type === 'expense')?.id || '');
                         }}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
@@ -220,30 +210,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                     </div>
                 </div>
 
-                {/* Tags */}
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-text-secondary flex items-center gap-2">
-                        <Plus size={16} className="text-accent" /> Tags
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                        {tags.map(t => (
-                            <span key={t} className="bg-accent/10 text-accent px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                                {t}
-                                <button onClick={() => handleRemoveTag(t)} type="button">
-                                    <X size={14} />
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                    <input
-                        type="text"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={handleAddTag}
-                        placeholder="Pressione Enter para adicionar tag"
-                        className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all"
-                    />
-                </div>
 
                 {/* Recurrence */}
                 <div className="glass p-6 space-y-4">

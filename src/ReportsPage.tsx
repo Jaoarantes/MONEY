@@ -35,10 +35,12 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
     });
 
     const categorySpending = categories
-        .filter(c => c.type === 'expense')
         .map(c => ({
             name: c.name,
-            value: transactions.filter(t => t.categoryId === c.id && t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+            value: transactions.filter(t => {
+                const tCatId = (t.categoryId || (t as any).category || (t as any).category_id)?.toString();
+                return tCatId === c.id?.toString() && t.type === 'expense';
+            }).reduce((s, t) => s + t.amount, 0),
             color: c.color
         }))
         .filter(c => c.value > 0)
@@ -107,7 +109,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                                 cx="50%"
                                 cy="50%"
                                 outerRadius={120}
-                                paddingAngle={2}
+                                paddingAngle={0}
                                 dataKey="value"
                             >
                                 {categorySpending.map((entry, index) => (

@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Filter, ArrowUp, ArrowDown,
     Download, Calendar, Trash2, Edit2,
-    MoreHorizontal, ChevronLeft, ChevronRight,
-    Repeat, FileText, CheckCircle2, AlertCircle
+    Repeat, FileText,
+    ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatCurrency, cn } from './utils';
 import { CategoryBadge } from './components';
@@ -25,12 +27,16 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [page, setPage] = useState(1);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
     const itemsPerPage = 10;
 
     const filteredTransactions = useMemo(() => {
         return transactions
             .filter(t => {
-                const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase());
+                const searchLower = search.toLowerCase();
+                const matchesSearch = t.description.toLowerCase().includes(searchLower) ||
+                    (t.notes && t.notes.toLowerCase().includes(searchLower));
+
                 const matchesType = filterType === 'all' || t.type === filterType;
                 return matchesSearch && matchesType;
             })
@@ -84,7 +90,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
                     <input
                         type="text"
-                        placeholder="Buscar por descrição..."
+                        placeholder="Buscar transações ou notas..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full bg-bg-input border border-border rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-accent transition-all"
@@ -132,6 +138,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-border bg-bg-surface-soft/40">
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider w-10"></th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Data</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Descrição</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Categoria</th>
@@ -142,64 +149,136 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         </thead>
                         <tbody className="divide-y divide-border">
                             {paginatedTransactions.map((tx) => {
-                                const category = categories.find(c => c.id === tx.categoryId);
+                                // Robust category resolution
+                                const catId = tx.categoryId || (tx as any).category_id || (tx as any).category;
+                                const category = categories.find(c => c.id === catId);
+                                const isExpanded = expandedId === tx.id;
+
                                 return (
-                                    <tr key={tx.id} className="hover:bg-bg-surface-soft transition-colors group">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-text-primary">
-                                                {format(parseISO(tx.date), 'dd MMM, yyyy')}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
-                                                    tx.type === 'income' ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"
+                                    <React.Fragment key={tx.id}>
+                                        <tr
+                                            onClick={() => setExpandedId(isExpanded ? null : tx.id)}
+                                            className={cn(
+                                                "hover:bg-bg-surface-soft transition-colors group cursor-pointer",
+                                                isExpanded && "bg-bg-surface-soft/50 shadow-inner"
+                                            )}
+                                        >
+                                            <td className="px-6 py-5 text-center">
+                                                <div className="text-text-muted">
+                                                    {isExpanded ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-text-primary">
+                                                    {format(parseISO(tx.date), 'dd MMM, yyyy')}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                                        tx.type === 'income' ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"
+                                                    )}>
+                                                        {tx.type === 'income' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-sm font-semibold text-text-primary leading-tight">{tx.description}</p>
+                                                        {tx.recurrent && (
+                                                            <div className="flex items-center gap-1 text-[9px] text-accent uppercase font-bold">
+                                                                <Repeat size={10} />
+                                                                <span>Recorrente</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap">
+                                                <CategoryBadge
+                                                    name={category?.name || 'Outros'}
+                                                    color={category?.color || '#8888A0'}
+                                                />
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap">
+                                                <span className="text-xs font-medium text-text-secondary">{tx.paymentMethod || '—'}</span>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-right">
+                                                <span className={cn(
+                                                    "text-sm font-bold font-numbers",
+                                                    tx.type === 'income' ? "text-positive" : "text-negative"
                                                 )}>
-                                                    {tx.type === 'income' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                                                    {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => onEdit(tx)}
+                                                        className="p-2 hover:bg-accent/10 hover:text-accent rounded-lg text-text-muted transition-all"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onDelete(tx.id)}
+                                                        className="p-2 hover:bg-negative/10 hover:text-negative rounded-lg text-text-muted transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-text-primary">{tx.description}</p>
-                                                    {tx.recurrent && (
-                                                        <div className="flex items-center gap-1 text-[10px] text-accent uppercase font-bold">
-                                                            <Repeat size={10} />
-                                                            <span>Recorrente</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <CategoryBadge name={category?.name || 'Outros'} color={category?.color || '#8888A0'} />
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-xs text-text-secondary">{tx.paymentMethod || '—'}</span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <span className={cn(
-                                                "text-sm font-bold font-numbers",
-                                                tx.type === 'income' ? "text-positive" : "text-negative"
-                                            )}>
-                                                {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => onEdit(tx)}
-                                                    className="p-2 hover:bg-accent/10 hover:text-accent rounded-lg text-text-muted transition-all"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => onDelete(tx.id)}
-                                                    className="p-2 hover:bg-negative/10 hover:text-negative rounded-lg text-text-muted transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                        </tr>
+
+                                        {/* Expanded Row */}
+                                        <AnimatePresence>
+                                            {isExpanded && (
+                                                <tr>
+                                                    <td colSpan={7} className="px-0 py-0 border-none">
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                            className="overflow-hidden bg-bg-surface-soft/30 border-b border-border"
+                                                        >
+                                                            <div className="px-20 py-8 grid grid-cols-1 md:grid-cols-2 gap-12">
+                                                                <div className="space-y-4">
+                                                                    <div className="flex items-center gap-2 text-xs font-bold text-text-muted uppercase tracking-widest">
+                                                                        <FileText size={14} />
+                                                                        Anotações & Detalhes
+                                                                    </div>
+                                                                    <div className="p-4 rounded-xl bg-bg-primary/50 border border-border min-h-[80px]">
+                                                                        <p className={cn(
+                                                                            "text-sm leading-relaxed",
+                                                                            tx.notes ? "text-text-primary" : "text-text-muted italic"
+                                                                        )}>
+                                                                            {tx.notes || "Sem anotações para este lançamento."}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-4">
+                                                                    <div className="flex items-center gap-2 text-xs font-bold text-text-muted uppercase tracking-widest">
+                                                                        <Calendar size={14} />
+                                                                        Metadados
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <div className="p-3 rounded-xl bg-bg-primary/50 border border-border">
+                                                                            <p className="text-[10px] text-text-muted uppercase font-bold mb-1">Criado em</p>
+                                                                            <p className="text-xs text-text-primary font-numbers">
+                                                                                {tx.createdAt ? format(parseISO(tx.createdAt), 'dd/MM/yyyy HH:mm') : '-'}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-text-muted italic">
+                                                                        ID: <code className="bg-bg-input px-1 rounded">{tx.id}</code>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </AnimatePresence>
+                                    </React.Fragment>
                                 );
                             })}
                         </tbody>

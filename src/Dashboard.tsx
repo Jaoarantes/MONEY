@@ -47,10 +47,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Chart 3: Distribution by Category
     const categoryData = categories
-        .filter(c => c.type === 'expense' || c.type === 'both')
         .map(cat => {
             const spent = transactions
-                .filter(t => t.categoryId === cat.id && t.type === 'expense')
+                .filter(t => {
+                    const tCatId = (t.categoryId || (t as any).category || (t as any).category_id)?.toString();
+                    return tCatId === cat.id?.toString() && t.type === 'expense';
+                })
                 .reduce((sum, t) => sum + t.amount, 0);
             return { name: cat.name, value: spent, color: cat.color };
         })
@@ -59,9 +61,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Chart 5: Budget vs Spent
     const budgetData = budgets.map(b => {
-        const cat = categories.find(c => c.id === b.categoryId);
+        const cat = categories.find(c => c.id?.toString() === b.categoryId?.toString());
         const spent = transactions
-            .filter(t => t.categoryId === b.categoryId && t.type === 'expense')
+            .filter(t => {
+                const tCatId = (t.categoryId || (t as any).category || (t as any).category_id)?.toString();
+                return tCatId === b.categoryId?.toString() && t.type === 'expense';
+            })
             .reduce((sum, t) => sum + t.amount, 0);
         return {
             name: cat?.name || 'Outros',
@@ -80,7 +85,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .map(t => ({
             name: t.description,
             amount: t.amount,
-            category: categories.find(c => c.id === t.categoryId)?.name || 'Outros'
+            category: categories.find(c => {
+                const tCatId = t.categoryId || (t as any).category || (t as any).category_id;
+                return c.id === tCatId;
+            })?.name || 'Outros'
         }));
 
     // Chart 8: Goals Progress
@@ -178,7 +186,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 cy="50%"
                                 innerRadius={60}
                                 outerRadius={90}
-                                paddingAngle={5}
+                                paddingAngle={0}
                                 dataKey="value"
                             >
                                 {categoryData.map((entry, index) => (

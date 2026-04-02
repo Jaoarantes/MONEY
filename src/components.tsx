@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import {
     TrendingUp, TrendingDown, Wallet, PiggyBank,
     ChevronUp, ChevronDown, MoreVertical, Trash2, Edit2,
@@ -144,37 +145,93 @@ interface ModalProps {
     children: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => (
-    <AnimatePresence>
-        {isOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={onClose}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative glass-strong w-full max-w-lg shadow-2xl overflow-hidden"
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+    if (!isOpen) return null;
+
+    return ReactDOM.createPortal(
+        <div
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px',
+                overflowY: 'auto',
+            }}
+        >
+            {/* Backdrop */}
+            <div
+                onClick={onClose}
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    backdropFilter: 'blur(8px)',
+                }}
+            />
+
+            {/* Modal Box */}
+            <div
+                className="glass-strong"
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '520px',
+                    backgroundColor: 'var(--color-bg-surface)',
+                    borderRadius: '24px',
+                    border: '1px solid var(--color-border-light)',
+                    boxShadow: '0 32px 64px rgba(0, 0, 0, 0.3)',
+                    overflow: 'hidden',
+                }}
+            >
+                {/* Header */}
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '24px 28px',
+                        borderBottom: '1px solid var(--color-border)',
+                    }}
                 >
-                    <div className="flex items-center justify-between p-6 border-b border-border">
-                        <h2 className="text-xl font-bold text-text-primary">{title}</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-bg-surface-soft rounded-lg transition-colors text-text-secondary hover:text-text-primary">
-                            <X size={20} />
-                        </button>
-                    </div>
-                    <div className="p-6">
-                        {children}
-                    </div>
-                </motion.div>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>{title}</h2>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: 'var(--color-bg-surface-soft)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            padding: '8px',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div style={{ padding: '28px', maxHeight: '70vh', overflowY: 'auto' }}>
+                    {children}
+                </div>
             </div>
-        )}
-    </AnimatePresence>
-);
+        </div>,
+        document.body
+    );
+};
+
+
 
 // ==================== CATEGORY BADGE ====================
 export const CategoryBadge: React.FC<{ name: string; color: string }> = ({ name, color }) => (

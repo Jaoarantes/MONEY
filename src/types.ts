@@ -10,7 +10,6 @@ export interface Transaction {
     description: string;
     categoryId: string;
     date: string; // ISO 8601
-    tags?: string[];
     recurrent: boolean;
     recurrenceFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
     paymentMethod?: string;
