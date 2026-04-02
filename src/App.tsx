@@ -54,11 +54,6 @@ export default function App() {
     }
   }, [categories.length, catLoading, seedInitialCategories]);
 
-  useEffect(() => {
-    if (!catLoading && !budLoading && categories.length > 0 && budgets.length === 0) {
-      initBudgets(categories);
-    }
-  }, [categories, budgets.length, initBudgets, catLoading, budLoading]);
 
   // Handle data storage resets / imports
   const handleReset = async () => {

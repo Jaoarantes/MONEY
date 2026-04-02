@@ -20,6 +20,7 @@ import { getMonthKey } from './utils';
 
 const mapTransaction = (sql: any): Transaction => ({
     ...sql,
+    categoryId: sql.category_id,
     createdAt: sql.created_at,
     updatedAt: sql.updated_at
 });
@@ -31,11 +32,14 @@ const mapCategory = (sql: any): Category => ({
 
 const mapGoal = (sql: any): Goal => ({
     ...sql,
+    targetAmount: sql.target_amount,
+    currentAmount: sql.current_amount,
     createdAt: sql.created_at
 });
 
 const mapBudget = (sql: any): Budget => ({
     ...sql,
+    categoryId: sql.category_id,
     createdAt: sql.created_at
 });
 
@@ -175,7 +179,9 @@ export function useCategories() {
         if (!user) return;
 
         const { DEFAULT_CATEGORIES } = await import('./seedData');
-        const newCats = DEFAULT_CATEGORIES.map(c => ({
+
+        // 1. Seed Categories
+        const newCatsBody = DEFAULT_CATEGORIES.map(c => ({
             user_id: user.id,
             name: c.name,
             type: c.type,
@@ -184,15 +190,37 @@ export function useCategories() {
             budget: c.budget
         }));
 
-        const { data, error } = await supabase
+        const { data: catsData, error: catError } = await supabase
             .from('categories')
-            .insert(newCats)
+            .insert(newCatsBody)
             .select();
 
-        if (!error && data) {
-            setCategories(data.map(mapCategory));
-        } else if (error) {
-            console.error('Error seeding categories:', error);
+        if (catError || !catsData) {
+            console.error('Error seeding categories:', catError);
+            return;
+        }
+
+        const mappedCats = catsData.map(mapCategory);
+        setCategories(mappedCats);
+
+        // 2. Seed Budgets for those categories
+        const month = getMonthKey(new Date());
+        const budgetsToSeed = catsData
+            .filter(c => c.budget && c.budget > 0)
+            .map(c => ({
+                user_id: user.id,
+                category_id: c.id,
+                month,
+                limit: c.budget,
+                spent: 0
+            }));
+
+        if (budgetsToSeed.length > 0) {
+            const { error: budError } = await supabase
+                .from('budgets')
+                .insert(budgetsToSeed);
+
+            if (budError) console.error('Error seeding initial budgets:', budError);
         }
     }, [setCategories]);
 
@@ -232,7 +260,7 @@ export function useTransactions() {
             type: tx.type,
             amount: tx.amount,
             description: tx.description,
-            category: tx.category,
+            category_id: tx.categoryId,
             date: tx.date,
             tags: tx.tags,
             recurrent: tx.recurrent,
@@ -259,12 +287,13 @@ export function useTransactions() {
     }, []);
 
     const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
-        // Map updates to snake_case
         const sqlUpdates: any = { ...updates };
+        if (updates.categoryId) sqlUpdates.category_id = updates.categoryId;
         if (updates.recurrenceFrequency) sqlUpdates.recurrence_frequency = updates.recurrenceFrequency;
         if (updates.paymentMethod) sqlUpdates.payment_method = updates.paymentMethod;
 
-        // Remove camelCase versions to avoid Supabase errors
+        // Clear camelCase variants
+        delete sqlUpdates.categoryId;
         delete sqlUpdates.recurrenceFrequency;
         delete sqlUpdates.paymentMethod;
         delete sqlUpdates.createdAt;
@@ -272,7 +301,7 @@ export function useTransactions() {
 
         const { data, error } = await supabase
             .from('transactions')
-            .update({ ...sqlUpdates, updated_at: new Date().toISOString() })
+            .update(sqlUpdates)
             .eq('id', id)
             .select()
             .single();
@@ -325,9 +354,17 @@ export function useBudgets() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
+        const sqlBody = {
+            user_id: user.id,
+            category_id: b.categoryId,
+            month: b.month,
+            limit: b.limit,
+            spent: b.spent
+        };
+
         const { data, error } = await supabase
             .from('budgets')
-            .insert([{ ...b, user_id: user.id }])
+            .insert([sqlBody])
             .select()
             .single();
 
@@ -342,9 +379,15 @@ export function useBudgets() {
     }, []);
 
     const updateBudget = useCallback(async (id: string, updates: Partial<Budget>) => {
+        const sqlBody: any = { ...updates };
+        if (updates.categoryId) {
+            sqlBody.category_id = updates.categoryId;
+            delete sqlBody.categoryId;
+        }
+
         const { data, error } = await supabase
             .from('budgets')
-            .update(updates)
+            .update(sqlBody)
             .eq('id', id)
             .select()
             .single();
@@ -419,9 +462,19 @@ export function useGoals() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
+        const sqlBody = {
+            user_id: user.id,
+            name: g.name,
+            target_amount: g.targetAmount,
+            current_amount: g.currentAmount,
+            deadline: g.deadline,
+            category_id: g.categoryId,
+            color: g.color
+        };
+
         const { data, error } = await supabase
             .from('goals')
-            .insert([{ ...g, user_id: user.id }])
+            .insert([sqlBody])
             .select()
             .single();
 
@@ -436,9 +489,19 @@ export function useGoals() {
     }, []);
 
     const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
+        const sqlUpdates: any = { ...updates };
+        if (updates.targetAmount) sqlUpdates.target_amount = updates.targetAmount;
+        if (updates.currentAmount) sqlUpdates.current_amount = updates.currentAmount;
+        if (updates.categoryId) sqlUpdates.category_id = updates.categoryId;
+
+        delete sqlUpdates.targetAmount;
+        delete sqlUpdates.currentAmount;
+        delete sqlUpdates.categoryId;
+        delete sqlUpdates.createdAt;
+
         const { data, error } = await supabase
             .from('goals')
-            .update(updates)
+            .update(sqlUpdates)
             .eq('id', id)
             .select()
             .single();

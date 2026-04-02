@@ -129,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Desktop Sidebar */}
             <motion.aside
                 animate={{ width: isCollapsed ? 88 : 280 }}
-                className="hidden lg:flex flex-col fixed inset-y-0 left-0 bg-bg-surface border-r border-border z-40 overflow-hidden"
+                className="hidden lg:flex flex-col fixed inset-y-0 left-0 bg-bg-surface border-r border-border z-40 overflow-y-auto custom-scrollbar"
             >
                 <div className="p-6 mb-4 flex items-center justify-between">
                     {!isCollapsed && (

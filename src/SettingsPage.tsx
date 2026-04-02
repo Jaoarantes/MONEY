@@ -30,7 +30,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
     const [newCatName, setNewCatName] = useState('');
     const [newCatColor, setNewCatColor] = useState('#6C63FF');
-    const [newCatType, setNewCatType] = useState<'income' | 'expense' | 'both'>('expense');
+    const [newCatType, setNewCatType] = useState<'income' | 'expense' | 'both'>('both');
 
     const [newPayMethod, setNewPayMethod] = useState('');
     const [isResetConfirm, setIsResetConfirm] = useState(false);
@@ -184,23 +184,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-text-muted uppercase">Tipo de Fluxo</label>
-                                <div className="flex p-1 bg-bg-input border border-border rounded-xl">
-                                    {(['income', 'expense', 'both'] as const).map(t => (
-                                        <button
-                                            key={t}
-                                            onClick={() => setNewCatType(t)}
-                                            className={cn(
-                                                "flex-1 py-2 rounded-lg text-[10px] font-bold uppercase transition-all",
-                                                newCatType === t ? "bg-accent text-white shadow-md" : "text-text-muted"
-                                            )}
-                                        >
-                                            {t === 'income' ? 'Receita' : t === 'expense' ? 'Despesa' : 'Misto'}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-text-muted uppercase flex justify-between">
@@ -228,7 +211,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                             disabled={!newCatName.trim()}
                             className="w-full py-4 bg-accent text-white font-bold rounded-2xl shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
                         >
-                            ADICIONAR CATEGORIA NO BANCO (SQL)
+                            ADICIONAR CATEGORIA
                         </button>
                     </div>
 

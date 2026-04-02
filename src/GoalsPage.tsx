@@ -54,7 +54,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                 targetAmount: targetNum,
                 currentAmount: currentNum,
                 deadline,
-                category: 'general',
+                categoryId: 'general',
                 color
             });
         }

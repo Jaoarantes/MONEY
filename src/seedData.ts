@@ -71,7 +71,7 @@ export function generateSeedTransactions(): Transaction[] {
             type: isIncome ? 'income' : 'expense',
             amount: isIncome ? randomAmount(2000, 8000) : randomAmount(15, 1500),
             description: desc,
-            category: cat.id,
+            categoryId: cat.id,
             date: format(date, 'yyyy-MM-dd'),
             tags: [],
             recurrent: Math.random() < 0.2,
@@ -95,7 +95,7 @@ export function generateSeedGoals(): Goal[] {
             targetAmount: 15000,
             currentAmount: 6800,
             deadline: format(subMonths(now, -8), 'yyyy-MM-dd'),
-            category: 'savings',
+            categoryId: 'savings',
             color: '#00D9A6',
         },
         {
@@ -105,7 +105,7 @@ export function generateSeedGoals(): Goal[] {
             targetAmount: 8000,
             currentAmount: 3200,
             deadline: format(subMonths(now, -5), 'yyyy-MM-dd'),
-            category: 'travel',
+            categoryId: 'travel',
             color: '#6C63FF',
         },
     ];

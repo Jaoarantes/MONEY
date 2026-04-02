@@ -50,7 +50,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .filter(c => c.type === 'expense' || c.type === 'both')
         .map(cat => {
             const spent = transactions
-                .filter(t => t.category === cat.id && t.type === 'expense')
+                .filter(t => t.categoryId === cat.id && t.type === 'expense')
                 .reduce((sum, t) => sum + t.amount, 0);
             return { name: cat.name, value: spent, color: cat.color };
         })
@@ -61,7 +61,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const budgetData = budgets.map(b => {
         const cat = categories.find(c => c.id === b.categoryId);
         const spent = transactions
-            .filter(t => t.category === b.categoryId && t.type === 'expense')
+            .filter(t => t.categoryId === b.categoryId && t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
         return {
             name: cat?.name || 'Outros',
@@ -80,7 +80,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .map(t => ({
             name: t.description,
             amount: t.amount,
-            category: categories.find(c => c.id === t.category)?.name || 'Outros'
+            category: categories.find(c => c.id === t.categoryId)?.name || 'Outros'
         }));
 
     // Chart 8: Goals Progress

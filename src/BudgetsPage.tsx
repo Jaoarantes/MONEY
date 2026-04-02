@@ -22,12 +22,16 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
-
-    // Form State
     const [category, setCategory] = useState('');
     const [limit, setLimit] = useState('0,00');
 
-    const expenseCategories = categories.filter(c => c.type === 'expense' || c.type === 'both');
+    // Form State
+    const allCategoriesSorted = [...categories]
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    const availableCategories = editingBudget
+        ? allCategoriesSorted
+        : allCategoriesSorted.filter(cat => !budgets.some(b => b.categoryId === cat.id));
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +57,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
     const openEdit = (b: Budget) => {
         setEditingBudget(b);
         setCategory(b.categoryId);
-        setLimit((b.limit * 100).toString().replace(/^0+/, ''));
+        setLimit(new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(b.limit));
         setIsModalOpen(true);
     };
 
@@ -65,8 +69,8 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                     <p className="text-text-secondary">Defina limites mensais para cada categoria de gasto.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-105 transition-all"
+                    onClick={() => { setEditingBudget(null); setCategory(''); setLimit('0,00'); setIsModalOpen(true); }}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-105 transition-all outline-none"
                 >
                     <Plus size={20} />
                     <span>Novo Orçamento</span>
@@ -77,75 +81,77 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                 {budgets.map((budget) => {
                     const category = categories.find(c => c.id === budget.categoryId);
                     const spent = transactions
-                        .filter(t => t.category === budget.categoryId && t.type === 'expense')
+                        .filter(t => t.categoryId === budget.categoryId && t.type === 'expense')
                         .reduce((sum, t) => sum + t.amount, 0);
                     const percent = (spent / budget.limit) * 100;
                     const isOver = spent > budget.limit;
                     const isWarning = spent > budget.limit * 0.8;
 
                     return (
-                        <div key={budget.id} className="glass-card p-6 flex flex-col gap-6 group relative overflow-hidden">
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-text-on-accent" style={{ backgroundColor: category?.color || 'var(--color-accent)' }}>
-                                        <PieChart size={24} />
+                        <div key={budget.id} className="glass-card p-6 flex flex-col gap-6 group relative overflow-hidden h-full hover:border-accent/40 hover:translate-y-[-4px] transition-all duration-300">
+                            <div className="flex justify-between items-start z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-text-on-accent shadow-lg shadow-accent/20" style={{ backgroundColor: category?.color || 'var(--color-accent)' }}>
+                                        <PieChart size={28} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-text-primary">{category?.name || 'Categoria Removida'}</h3>
-                                        <p className="text-xs text-text-secondary">Limite mensal:</p>
+                                        <h3 className="text-lg font-bold text-text-primary leading-tight">{category?.name || 'Categoria Removida'}</h3>
+                                        <p className="text-xs text-text-muted mt-1">Limite Mensal</p>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => openEdit(budget)} className="p-2 hover:bg-white/5 rounded-lg text-text-muted transition-all">
-                                        <Edit2 size={16} />
+                                <div className="flex gap-1">
+                                    <button onClick={() => openEdit(budget)} className="p-2 hover:bg-bg-surface-soft rounded-xl text-text-muted hover:text-accent transition-all" title="Ajustar">
+                                        <Edit2 size={18} />
                                     </button>
-                                    <button onClick={() => onDeleteBudget(budget.id)} className="p-2 hover:bg-negative/10 hover:text-negative rounded-lg text-text-muted transition-all">
-                                        <Trash2 size={16} />
+                                    <button onClick={() => onDeleteBudget(budget.id)} className="p-2 hover:bg-negative/10 rounded-xl text-text-muted hover:text-negative transition-all" title="Excluir">
+                                        <Trash2 size={18} />
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-5 z-10">
                                 <div className="flex justify-between items-end">
                                     <div className="space-y-1">
-                                        <p className="text-2xl font-bold font-numbers">{formatCurrency(spent)}</p>
-                                        <p className="text-xs text-text-muted">Gasto até agora</p>
+                                        <p className="text-sm text-text-muted uppercase tracking-wider font-semibold">Consumido</p>
+                                        <p className="text-3xl font-bold font-numbers text-text-primary">{formatCurrency(spent)}</p>
                                     </div>
                                     <div className="text-right space-y-1">
-                                        <p className="text-lg font-bold font-numbers text-text-secondary">{formatCurrency(budget.limit)}</p>
-                                        <p className="text-xs text-text-muted">Total planejado</p>
+                                        <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Teto</p>
+                                        <p className="text-xl font-bold font-numbers text-text-secondary">{formatCurrency(budget.limit)}</p>
                                     </div>
                                 </div>
 
-                                <ProgressBar
-                                    value={spent}
-                                    max={budget.limit}
-                                    color={isOver ? 'var(--color-negative)' : (isWarning ? 'var(--color-warning)' : 'var(--color-positive)')}
-                                    showPercent
-                                />
+                                <div className="space-y-2">
+                                    <ProgressBar
+                                        value={spent}
+                                        max={budget.limit}
+                                        color={isOver ? 'var(--color-negative)' : (isWarning ? 'var(--color-warning)' : 'var(--color-positive)')}
+                                        showPercent
+                                    />
+                                </div>
 
                                 <div className="flex items-center gap-2">
                                     {isOver ? (
-                                        <div className="flex items-center gap-2 text-negative text-xs font-bold bg-negative/10 px-3 py-1.5 rounded-lg w-full">
+                                        <div className="flex items-center gap-2 text-negative text-[10px] font-black tracking-widest uppercase bg-negative/10 px-3 py-2 rounded-xl w-full border border-negative/20">
                                             <AlertTriangle size={14} />
-                                            ORÇAMENTO EXCEDIDO!
+                                            LIMITE EXCEDIDO
                                         </div>
                                     ) : isWarning ? (
-                                        <div className="flex items-center gap-2 text-warning text-xs font-bold bg-warning/10 px-3 py-1.5 rounded-lg w-full">
+                                        <div className="flex items-center gap-2 text-warning text-[10px] font-black tracking-widest uppercase bg-warning/10 px-3 py-2 rounded-xl w-full border border-warning/20">
                                             <AlertTriangle size={14} />
-                                            PRÓXIMO DO LIMITE (80%)
+                                            ALERTA: 80% ATINGIDO
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2 text-positive text-xs font-bold bg-positive/10 px-3 py-1.5 rounded-lg w-full">
+                                        <div className="flex items-center gap-2 text-positive text-[10px] font-black tracking-widest uppercase bg-positive/10 px-3 py-2 rounded-xl w-full border border-positive/20">
                                             <CheckCircle2 size={14} />
-                                            VALOR DENTRO DO ESPERADO
+                                            DENTRO DO PLANO
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Icon Decoration */}
-                            <PieChart className="absolute -right-4 -bottom-4 text-white opacity-5 pointer-events-none" size={100} />
+                            {/* Background decoration */}
+                            <PieChart className="absolute -right-6 -bottom-6 text-accent opacity-[0.03] pointer-events-none rotate-12" size={160} />
                         </div>
                     );
                 })}
@@ -171,7 +177,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                             required
                         >
                             <option value="">Selecione uma categoria...</option>
-                            {expenseCategories.map(c => (
+                            {availableCategories.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
@@ -199,7 +205,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
 
                     <button
                         type="submit"
-                        className="w-full py-4 bg-accent text-white rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        className="w-full py-4 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >
                         {editingBudget ? 'SALVAR ALTERAÇÕES' : 'CRIAR ORÇAMENTO'}
                     </button>

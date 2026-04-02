@@ -8,7 +8,7 @@ export interface Transaction {
     type: 'income' | 'expense';
     amount: number;
     description: string;
-    category: string;
+    categoryId: string;
     date: string; // ISO 8601
     tags?: string[];
     recurrent: boolean;
@@ -36,7 +36,7 @@ export interface Goal {
     targetAmount: number;
     currentAmount: number;
     deadline: string;
-    category: string;
+    categoryId: string;
     color: string;
 }
 

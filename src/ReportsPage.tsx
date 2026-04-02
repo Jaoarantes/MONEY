@@ -38,7 +38,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
         .filter(c => c.type === 'expense')
         .map(c => ({
             name: c.name,
-            value: transactions.filter(t => t.category === c.id && t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+            value: transactions.filter(t => t.categoryId === c.id && t.type === 'expense').reduce((s, t) => s + t.amount, 0),
             color: c.color
         }))
         .filter(c => c.value > 0)

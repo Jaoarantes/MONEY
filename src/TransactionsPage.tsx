@@ -49,7 +49,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         const rows = filteredTransactions.map(t => [
             t.date,
             t.description,
-            categories.find(c => c.id === t.category)?.name || 'Outros',
+            categories.find(c => c.id === t.categoryId)?.name || 'Outros',
             t.type === 'income' ? 'Receita' : 'Despesa',
             t.amount.toString(),
             t.paymentMethod || '-'
@@ -142,7 +142,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         </thead>
                         <tbody className="divide-y divide-border">
                             {paginatedTransactions.map((tx) => {
-                                const category = categories.find(c => c.id === tx.category);
+                                const category = categories.find(c => c.id === tx.categoryId);
                                 return (
                                     <tr key={tx.id} className="hover:bg-bg-surface-soft transition-colors group">
                                         <td className="px-6 py-4 whitespace-nowrap">

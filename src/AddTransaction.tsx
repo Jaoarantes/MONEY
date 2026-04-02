@@ -22,7 +22,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type || 'expense');
     const [amount, setAmount] = useState(initialData?.amount ? formatCurrencyInput(initialData.amount) : '0,00');
     const [description, setDescription] = useState(initialData?.description || '');
-    const [category, setCategory] = useState(initialData?.category || categories.find(c => c.type === 'expense')?.id || '');
+    const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
     const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || paymentMethods[0] || 'Pix');
     const [recurrent, setRecurrent] = useState(initialData?.recurrent || false);
@@ -34,7 +34,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const filteredCategories = categories.filter(c => c.type === type || c.type === 'both');
+    const filteredCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^\d]/g, '');
@@ -70,7 +70,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                 type,
                 amount: parseCurrencyInput(amount),
                 description,
-                category,
+                categoryId: categoryId,
                 date,
                 paymentMethod,
                 recurrent,
@@ -108,7 +108,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         type="button"
                         onClick={() => {
                             setType('income');
-                            setCategory(categories.find(c => c.type === 'income')?.id || '');
+                            setCategoryId(categories.find(c => c.type === 'income')?.id || '');
                         }}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
@@ -122,7 +122,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                         type="button"
                         onClick={() => {
                             setType('expense');
-                            setCategory(categories.find(c => c.type === 'expense')?.id || '');
+                            setCategoryId(categories.find(c => c.type === 'expense')?.id || '');
                         }}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all",
@@ -192,8 +192,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             <Tag size={16} className="text-accent" /> Categoria
                         </label>
                         <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
                             className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all"
                             required
                         >
