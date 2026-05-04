@@ -604,6 +604,14 @@ export function useFinancialSummary(transactions: Transaction[], month?: number,
             0
         );
 
+        // Balance carried over from all months BEFORE the selected month
+        const previousBalance = transactions
+            .filter((t) => {
+                const d = parseISO(t.date);
+                return d < start;
+            })
+            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+
         const savings = income - expenses;
         const prevSavings = prevIncome - prevExpenses;
 
@@ -611,8 +619,9 @@ export function useFinancialSummary(transactions: Transaction[], month?: number,
         const expenseVariation = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
         const savingsVariation = prevSavings !== 0 ? ((savings - prevSavings) / Math.abs(prevSavings)) * 100 : 0;
 
+        const targetDate = new Date(targetYear, targetMonth);
         const sparklineData = Array.from({ length: 6 }, (_, i) => {
-            const m = subMonths(now, 5 - i);
+            const m = subMonths(targetDate, 5 - i);
             const key = getMonthKey(m);
             const mStart = startOfMonth(m);
             const mEnd = endOfMonth(m);
@@ -630,6 +639,7 @@ export function useFinancialSummary(transactions: Transaction[], month?: number,
             expenses,
             savings,
             totalBalance,
+            previousBalance,
             incomeVariation,
             expenseVariation,
             savingsVariation,

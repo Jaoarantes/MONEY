@@ -1,7 +1,8 @@
 import React from 'react';
 import {
     TrendingUp, TrendingDown, Wallet, PiggyBank,
-    ArrowUpRight, ArrowDownRight, Target
+    ArrowUpRight, ArrowDownRight, Target,
+    ChevronLeft, ChevronRight, Calendar
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,6 +19,10 @@ interface DashboardProps {
     categories: Category[];
     goals: Goal[];
     budgets: Budget[];
+    selectedMonth: number;
+    selectedYear: number;
+    onMonthChange: (month: number) => void;
+    onYearChange: (year: number) => void;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -40,7 +45,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({
-    summary, transactions, categories, goals, budgets
+    summary, transactions, categories, goals, budgets,
+    selectedMonth, selectedYear, onMonthChange, onYearChange
 }) => {
     // Chart 1: Cash Flow (Area)
     const cashFlowData = summary.sparklineData;
@@ -100,17 +106,89 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     return (
         <div className="space-y-8 animate-fade-in-up">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-text-primary tracking-tight">Visão Geral</h1>
-                <p className="text-text-secondary">Bem-vindo de volta! Aqui está o resumo das suas finanças.</p>
+            {/* Header with Month Picker */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-text-primary tracking-tight">Visão Geral</h1>
+                    <p className="text-text-secondary">Bem-vindo de volta! Aqui está o resumo das suas finanças.</p>
+                </div>
+                <div className="month-picker">
+                    <button
+                        className="month-picker-btn"
+                        onClick={() => {
+                            if (selectedMonth === 0) {
+                                onMonthChange(11);
+                                onYearChange(selectedYear - 1);
+                            } else {
+                                onMonthChange(selectedMonth - 1);
+                            }
+                        }}
+                        aria-label="Mês anterior"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+                    <div className="month-picker-label">
+                        <Calendar size={16} className="text-accent" />
+                        <span>
+                            {new Date(selectedYear, selectedMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                        </span>
+                    </div>
+                    <button
+                        className="month-picker-btn"
+                        onClick={() => {
+                            if (selectedMonth === 11) {
+                                onMonthChange(0);
+                                onYearChange(selectedYear + 1);
+                            } else {
+                                onMonthChange(selectedMonth + 1);
+                            }
+                        }}
+                        disabled={selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear()}
+                        aria-label="Próximo mês"
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Balance Summary Strip */}
+            <div className="balance-strip glass-card p-4">
+                <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-text-muted" />
+                        <span className="text-text-secondary">Saldo Anterior:</span>
+                        <span className={`font-bold font-numbers ${summary.previousBalance >= 0 ? 'text-positive' : 'text-negative'}`}>
+                            {formatCurrency(summary.previousBalance)}
+                        </span>
+                    </div>
+                    <span className="text-text-muted">+</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-positive" />
+                        <span className="text-text-secondary">Receitas:</span>
+                        <span className="font-bold font-numbers text-positive">{formatCurrency(summary.income)}</span>
+                    </div>
+                    <span className="text-text-muted">−</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-negative" />
+                        <span className="text-text-secondary">Despesas:</span>
+                        <span className="font-bold font-numbers text-negative">{formatCurrency(summary.expenses)}</span>
+                    </div>
+                    <span className="text-text-muted">=</span>
+                    <div className="flex items-center gap-2 pl-2 border-l border-border">
+                        <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                        <span className="text-text-secondary font-medium">Saldo Final:</span>
+                        <span className={`font-bold font-numbers text-base ${(summary.previousBalance + summary.savings) >= 0 ? 'text-accent' : 'text-negative'}`}>
+                            {formatCurrency(summary.previousBalance + summary.savings)}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 <KPICard
-                    title="Saldo Geral"
-                    value={summary.totalBalance}
+                    title="Saldo do Mês"
+                    value={summary.previousBalance + summary.savings}
                     variation={summary.savingsVariation}
                     icon={<Wallet size={24} />}
                     color="accent"

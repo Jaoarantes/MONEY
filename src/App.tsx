@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { AuthPage } from './AuthPage';
 import { Sidebar } from './Sidebar';
@@ -16,12 +16,18 @@ import {
 } from './hooks';
 import type { PageName, Transaction } from './types';
 import { cn } from './utils';
+import { startOfMonth, endOfMonth, parseISO, isWithinInterval } from 'date-fns';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<PageName>('dashboard');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // Month/Year navigation for Dashboard
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   useEffect(() => {
     // Check active session
@@ -45,7 +51,17 @@ export default function App() {
   const { goals, loading: goalLoading, addContribution, addGoal, deleteGoal, updateGoal } = useGoals();
   const { toasts, addToast, removeToast } = useToast();
 
-  const summary = useFinancialSummary(transactions);
+  const summary = useFinancialSummary(transactions, selectedMonth, selectedYear);
+
+  // Filter transactions to the selected month for Dashboard display
+  const dashboardTransactions = React.useMemo(() => {
+    const start = startOfMonth(new Date(selectedYear, selectedMonth));
+    const end = endOfMonth(new Date(selectedYear, selectedMonth));
+    return transactions.filter(t => {
+      const d = parseISO(t.date);
+      return isWithinInterval(d, { start, end });
+    });
+  }, [transactions, selectedMonth, selectedYear]);
 
   // Initialize categories and budgets if empty (seeding for new users)
   useEffect(() => {
@@ -106,14 +122,30 @@ export default function App() {
 
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard summary={summary} transactions={transactions} categories={categories} goals={goals} budgets={budgets} />;
+        return (
+          <Dashboard
+            summary={summary}
+            transactions={dashboardTransactions}
+            categories={categories}
+            goals={goals}
+            budgets={budgets}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+          />
+        );
       case 'transactions':
         return (
           <TransactionsPage
-            transactions={transactions}
+            transactions={dashboardTransactions}
             categories={categories}
             onDelete={(id) => { deleteTransaction(id); addToast('info', 'Transação excluída.'); }}
             onEdit={(tx) => { setEditingTransaction(tx); setCurrentPage('add'); }}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
           />
         );
       case 'add':
@@ -164,7 +196,19 @@ export default function App() {
           />
         );
       default:
-        return <Dashboard summary={summary} transactions={transactions} categories={categories} goals={goals} budgets={budgets} />;
+        return (
+          <Dashboard
+            summary={summary}
+            transactions={dashboardTransactions}
+            categories={categories}
+            goals={goals}
+            budgets={budgets}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+          />
+        );
     }
   };
 

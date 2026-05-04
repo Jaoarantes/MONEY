@@ -228,6 +228,77 @@
   box-shadow: 0 0 20px rgba(255, 184, 48, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
+/* ==================== BALANCE SUMMARY STRIP ==================== */
+
+.balance-strip {
+  border-left: 3px solid var(--color-accent);
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.theme-light .balance-strip {
+  border-left-color: var(--color-accent);
+}
+
+/* ==================== MONTH PICKER ==================== */
+
+.month-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(26, 26, 36, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 4px;
+}
+
+.month-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.month-picker-btn:hover:not(:disabled) {
+  background: var(--color-bg-surface-soft);
+  color: var(--color-text-primary);
+}
+
+.month-picker-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.month-picker-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.month-picker-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-transform: capitalize;
+  min-width: 160px;
+  justify-content: center;
+  user-select: none;
+}
+
+.theme-light .month-picker {
+  background: rgba(255, 255, 255, 0.7);
+}
+
 /* ==================== PRINT ==================== */
 
 @media print {

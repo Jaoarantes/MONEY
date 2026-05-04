@@ -17,10 +17,15 @@ interface TransactionsPageProps {
     categories: Category[];
     onDelete: (id: string) => void;
     onEdit: (tx: Transaction) => void;
+    selectedMonth: number;
+    selectedYear: number;
+    onMonthChange: (month: number) => void;
+    onYearChange: (year: number) => void;
 }
 
 export const TransactionsPage: React.FC<TransactionsPageProps> = ({
-    transactions, categories, onDelete, onEdit
+    transactions, categories, onDelete, onEdit,
+    selectedMonth, selectedYear, onMonthChange, onYearChange
 }) => {
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
@@ -75,13 +80,52 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     <h1 className="text-3xl font-bold text-text-primary">Transações</h1>
                     <p className="text-text-secondary">Histórico detalhado de toda sua atividade financeira.</p>
                 </div>
-                <button
-                    onClick={exportToCSV}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-surface-soft hover:bg-bg-surface-soft/80 border border-border rounded-xl font-medium transition-all text-text-primary"
-                >
-                    <Download size={18} />
-                    <span>Exportar CSV</span>
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="month-picker">
+                        <button
+                            className="month-picker-btn"
+                            onClick={() => {
+                                if (selectedMonth === 0) {
+                                    onMonthChange(11);
+                                    onYearChange(selectedYear - 1);
+                                } else {
+                                    onMonthChange(selectedMonth - 1);
+                                }
+                            }}
+                            aria-label="Mês anterior"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <div className="month-picker-label">
+                            <Calendar size={16} className="text-accent" />
+                            <span>
+                                {new Date(selectedYear, selectedMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                            </span>
+                        </div>
+                        <button
+                            className="month-picker-btn"
+                            onClick={() => {
+                                if (selectedMonth === 11) {
+                                    onMonthChange(0);
+                                    onYearChange(selectedYear + 1);
+                                } else {
+                                    onMonthChange(selectedMonth + 1);
+                                }
+                            }}
+                            disabled={selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear()}
+                            aria-label="Próximo mês"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                    <button
+                        onClick={exportToCSV}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-surface-soft hover:bg-bg-surface-soft/80 border border-border rounded-xl font-medium transition-all text-text-primary"
+                    >
+                        <Download size={18} />
+                        <span>Exportar CSV</span>
+                    </button>
+                </div>
             </div>
 
             {/* Filters Bar */}
