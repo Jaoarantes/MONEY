@@ -6,7 +6,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from './supabase';
 import {
     subMonths, startOfMonth, endOfMonth,
-    parseISO, isWithinInterval
+    parseISO, isWithinInterval, addDays, addWeeks, addMonths, addYears, format
 } from 'date-fns';
 import type {
     Transaction, Category, Goal, Budget,
@@ -14,38 +14,76 @@ import type {
 } from './types';
 import { getMonthKey } from './utils';
 
+type SqlRow = Record<string, unknown>;
+type TransactionUpdates = {
+    type?: Transaction['type'];
+    amount?: number;
+    description?: string;
+    category?: string;
+    date?: string;
+    recurrent?: boolean;
+    recurrence_frequency?: Transaction['recurrenceFrequency'];
+    payment_method?: string;
+    notes?: string;
+};
+type BudgetUpdates = Partial<Budget> & { category_id?: string };
+type GoalUpdates = {
+    name?: string;
+    target_amount?: number;
+    current_amount?: number;
+    deadline?: string;
+    category?: string;
+    color?: string;
+};
+
+const DEFAULT_PAYMENT_METHODS = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto'];
+
+const addRecurrenceInterval = (date: Date, frequency?: Transaction['recurrenceFrequency']) => {
+    switch (frequency) {
+        case 'daily':
+            return addDays(date, 1);
+        case 'weekly':
+            return addWeeks(date, 1);
+        case 'yearly':
+            return addYears(date, 1);
+        case 'monthly':
+        default:
+            return addMonths(date, 1);
+    }
+};
+
 // =====================================================
 // MAPPERS — SQL (snake_case) to TS (camelCase)
 // =====================================================
 
-const mapTransaction = (sql: any): Transaction => ({
-    ...sql,
+const mapTransaction = (sql: SqlRow): Transaction => ({
+    ...(sql as unknown as Transaction),
     amount: Number(sql.amount),
-    categoryId: sql.category || sql.category_id || sql.categoryId,
-    paymentMethod: sql.payment_method || sql.paymentMethod,
-    createdAt: sql.created_at,
-    updatedAt: sql.updated_at
+    categoryId: String(sql.category || sql.category_id || sql.categoryId || ''),
+    paymentMethod: sql.payment_method ? String(sql.payment_method) : undefined,
+    createdAt: String(sql.created_at || ''),
+    updatedAt: String(sql.updated_at || '')
 });
 
-const mapCategory = (sql: any): Category => ({
-    ...sql,
-    createdAt: sql.created_at
+const mapCategory = (sql: SqlRow): Category => ({
+    ...(sql as unknown as Category),
+    createdAt: String(sql.created_at || '')
 });
 
-const mapGoal = (sql: any): Goal => ({
-    ...sql,
+const mapGoal = (sql: SqlRow): Goal => ({
+    ...(sql as unknown as Goal),
     targetAmount: Number(sql.target_amount),
     currentAmount: Number(sql.current_amount),
-    categoryId: sql.category || sql.category_id,
-    createdAt: sql.created_at
+    categoryId: String(sql.category || sql.category_id || ''),
+    createdAt: String(sql.created_at || '')
 });
 
-const mapBudget = (sql: any): Budget => ({
-    ...sql,
+const mapBudget = (sql: SqlRow): Budget => ({
+    ...(sql as unknown as Budget),
     limit: Number(sql.limit),
     spent: Number(sql.spent || 0),
-    categoryId: sql.category_id,
-    createdAt: sql.created_at
+    categoryId: String(sql.category_id || ''),
+    createdAt: String(sql.created_at || '')
 });
 
 // =====================================================
@@ -82,13 +120,13 @@ export function useSettings() {
             locale: 'pt-BR',
             theme: 'dark',
             monthStart: 1,
-            paymentMethods: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto']
+            paymentMethods: DEFAULT_PAYMENT_METHODS
         };
     });
 
     const setSettings = useCallback((val: AppSettings | ((prev: AppSettings) => AppSettings)) => {
         setStoredSettings(prev => {
-            const next = typeof val === 'function' ? (val as any)(prev) : val;
+            const next = typeof val === 'function' ? (val as (prev: AppSettings) => AppSettings)(prev) : val;
             localStorage.setItem('app-settings', JSON.stringify(next));
             return next;
         });
@@ -96,7 +134,7 @@ export function useSettings() {
 
     const settings = {
         ...storedSettings,
-        paymentMethods: storedSettings.paymentMethods || ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto']
+        paymentMethods: storedSettings.paymentMethods || DEFAULT_PAYMENT_METHODS
     };
 
     const toggleTheme = useCallback(() => {
@@ -162,11 +200,12 @@ export function useCategories() {
 
         if (error) {
             console.error('Error updating category:', error);
-            return;
+            return null;
         }
 
         const mapped = mapCategory(data);
         setCategories(prev => prev.map(c => c.id === id ? mapped : c));
+        return mapped;
     }, []);
 
     const deleteCategory = useCallback(async (id: string) => {
@@ -175,8 +214,12 @@ export function useCategories() {
             .delete()
             .eq('id', id);
 
-        if (error) console.error('Error deleting category:', error);
-        else setCategories(prev => prev.filter(c => c.id !== id));
+        if (error) {
+            console.error('Error deleting category:', error);
+            return false;
+        }
+        setCategories(prev => prev.filter(c => c.id !== id));
+        return true;
     }, []);
 
     const seedInitialCategories = useCallback(async () => {
@@ -229,7 +272,7 @@ export function useCategories() {
         }
     }, [setCategories]);
 
-    return { categories, loading, addCategory, updateCategory, deleteCategory, setCategories, seedInitialCategories };
+    return { categories, loading, addCategory, updateCategory, deleteCategory, seedInitialCategories };
 }
 
 // =====================================================
@@ -259,40 +302,49 @@ export function useTransactions() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
+        const firstDate = parseISO(tx.date);
+        const occurrences = tx.recurrent
+            ? Array.from({ length: 12 }, (_, index) => {
+                let occurrenceDate = firstDate;
+                for (let step = 0; step < index; step += 1) {
+                    occurrenceDate = addRecurrenceInterval(occurrenceDate, tx.recurrenceFrequency);
+                }
+                return occurrenceDate;
+            })
+            : [firstDate];
+
         // Map camelCase to snake_case for SQL
-        const sqlBody = {
+        const sqlBody = occurrences.map((occurrenceDate, index) => ({
             user_id: user.id,
             type: tx.type,
             amount: tx.amount,
-            description: tx.description,
+            description: tx.recurrent && index > 0 ? `${tx.description} (${index + 1}/12)` : tx.description,
             category: tx.categoryId,
-            date: tx.date,
+            date: format(occurrenceDate, 'yyyy-MM-dd'),
             recurrent: tx.recurrent,
             recurrence_frequency: tx.recurrenceFrequency,
             payment_method: tx.paymentMethod,
             notes: tx.notes
-        };
+        }));
 
         const { data, error } = await supabase
             .from('transactions')
-            .insert([sqlBody])
-            .select()
-            .single();
+            .insert(sqlBody)
+            .select();
 
         if (error) {
             console.error('Error adding transaction:', error);
-            alert('Erro ao salvar transação: ' + error.message);
             return false;
         }
 
-        const mapped = mapTransaction(data);
-        setTransactions(prev => [mapped, ...prev]);
+        const mapped = data.map(mapTransaction);
+        setTransactions(prev => [...mapped, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
         return true;
     }, []);
 
     const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
         // Explicitly map allowed fields to snake_case for Supabase
-        const sqlUpdates: any = {};
+        const sqlUpdates: TransactionUpdates = {};
         if (updates.type !== undefined) sqlUpdates.type = updates.type;
         if (updates.amount !== undefined) sqlUpdates.amount = updates.amount;
         if (updates.description !== undefined) sqlUpdates.description = updates.description;
@@ -312,7 +364,6 @@ export function useTransactions() {
 
         if (error) {
             console.error('Error updating transaction:', error);
-            alert('Erro ao atualizar transação: ' + error.message);
             return false;
         }
 
@@ -330,11 +381,15 @@ export function useTransactions() {
             .delete()
             .eq('id', id);
 
-        if (error) console.error('Error deleting transaction:', error);
-        else setTransactions(prev => prev.filter(t => t.id !== id));
+        if (error) {
+            console.error('Error deleting transaction:', error);
+            return false;
+        }
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        return true;
     }, []);
 
-    return { transactions, loading, addTransaction, updateTransaction, deleteTransaction, setTransactions };
+    return { transactions, loading, addTransaction, updateTransaction, deleteTransaction };
 }
 
 // =====================================================
@@ -388,7 +443,7 @@ export function useBudgets() {
     }, []);
 
     const updateBudget = useCallback(async (id: string, updates: Partial<Budget>) => {
-        const sqlBody: any = { ...updates };
+        const sqlBody: BudgetUpdates = { ...updates };
         if (updates.categoryId) {
             sqlBody.category_id = updates.categoryId;
             delete sqlBody.categoryId;
@@ -403,11 +458,12 @@ export function useBudgets() {
 
         if (error) {
             console.error('Error updating budget:', error);
-            return;
+            return null;
         }
 
         const mapped = mapBudget(data);
         setBudgets(prev => prev.map(b => b.id === id ? mapped : b));
+        return mapped;
     }, []);
 
     const deleteBudget = useCallback(async (id: string) => {
@@ -416,33 +472,15 @@ export function useBudgets() {
             .delete()
             .eq('id', id);
 
-        if (error) console.error('Error deleting budget:', error);
-        else setBudgets(prev => prev.filter(b => b.id !== id));
+        if (error) {
+            console.error('Error deleting budget:', error);
+            return false;
+        }
+        setBudgets(prev => prev.filter(b => b.id !== id));
+        return true;
     }, []);
 
-    const initBudgets = useCallback(async (categories: Category[]) => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const month = getMonthKey(new Date());
-        const newBudgets = categories.map(cat => ({
-            user_id: user.id,
-            category_id: cat.id,
-            month,
-            limit: 0,
-            spent: 0
-        }));
-
-        const { data, error } = await supabase
-            .from('budgets')
-            .insert(newBudgets)
-            .select();
-
-        if (error) console.error('Error initializing budgets:', error);
-        if (data) setBudgets(prev => [...prev, ...data.map(mapBudget)]);
-    }, []);
-
-    return { budgets, loading, addBudget, updateBudget, deleteBudget, setBudgets, initBudgets };
+    return { budgets, loading, addBudget, updateBudget, deleteBudget };
 }
 
 // =====================================================
@@ -500,15 +538,13 @@ export function useGoals() {
     }, []);
 
     const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
-        const sqlUpdates: any = { ...updates };
-        if (updates.targetAmount) sqlUpdates.target_amount = updates.targetAmount;
-        if (updates.currentAmount) sqlUpdates.current_amount = updates.currentAmount;
-        if (updates.categoryId) sqlUpdates.category = updates.categoryId;
-
-        delete sqlUpdates.targetAmount;
-        delete sqlUpdates.currentAmount;
-        delete sqlUpdates.categoryId;
-        delete sqlUpdates.createdAt;
+        const sqlUpdates: GoalUpdates = {};
+        if (updates.name !== undefined) sqlUpdates.name = updates.name;
+        if (updates.targetAmount !== undefined) sqlUpdates.target_amount = updates.targetAmount;
+        if (updates.currentAmount !== undefined) sqlUpdates.current_amount = updates.currentAmount;
+        if (updates.deadline !== undefined) sqlUpdates.deadline = updates.deadline;
+        if (updates.categoryId !== undefined) sqlUpdates.category = updates.categoryId;
+        if (updates.color !== undefined) sqlUpdates.color = updates.color;
 
         const { data, error } = await supabase
             .from('goals')
@@ -519,11 +555,12 @@ export function useGoals() {
 
         if (error) {
             console.error('Error updating goal:', error);
-            return;
+            return null;
         }
 
         const mapped = mapGoal(data);
         setGoals(prev => prev.map(g => g.id === id ? mapped : g));
+        return mapped;
     }, []);
 
     const deleteGoal = useCallback(async (id: string) => {
@@ -532,13 +569,17 @@ export function useGoals() {
             .delete()
             .eq('id', id);
 
-        if (error) console.error('Error deleting goal:', error);
-        else setGoals(prev => prev.filter(g => g.id !== id));
+        if (error) {
+            console.error('Error deleting goal:', error);
+            return false;
+        }
+        setGoals(prev => prev.filter(g => g.id !== id));
+        return true;
     }, []);
 
     const addContribution = useCallback(async (id: string, amount: number) => {
         const goal = goals.find(g => g.id === id);
-        if (!goal) return;
+        if (!goal) return null;
 
         const newAmount = Math.min(goal.currentAmount + amount, goal.targetAmount);
         const { data, error } = await supabase
@@ -548,14 +589,19 @@ export function useGoals() {
             .select()
             .single();
 
-        if (error) console.error('Error adding contribution:', error);
+        if (error) {
+            console.error('Error adding contribution:', error);
+            return null;
+        }
         if (data) {
             const mapped = mapGoal(data);
             setGoals(prev => prev.map(g => g.id === id ? mapped : g));
+            return mapped;
         }
+        return null;
     }, [goals]);
 
-    return { goals, loading, addGoal, updateGoal, deleteGoal, addContribution, setGoals };
+    return { goals, loading, addGoal, updateGoal, deleteGoal, addContribution };
 }
 
 // =====================================================

@@ -26,6 +26,7 @@ export interface Category {
     icon: string;
     color: string;
     budget?: number;
+    createdAt?: string;
 }
 
 export interface Goal {
@@ -37,6 +38,7 @@ export interface Goal {
     deadline: string;
     categoryId: string;
     color: string;
+    createdAt?: string;
 }
 
 export interface Budget {
@@ -46,6 +48,7 @@ export interface Budget {
     month: string; // 'YYYY-MM'
     limit: number;
     spent: number;
+    createdAt?: string;
 }
 
 export interface AppSettings {

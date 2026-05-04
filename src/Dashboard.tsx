@@ -1,20 +1,37 @@
 import React from 'react';
 import {
     TrendingUp, TrendingDown, Wallet, PiggyBank,
-    ArrowUpRight, ArrowDownRight, Target,
-    ChevronLeft, ChevronRight, Calendar
+    ChevronLeft, ChevronRight, Calendar, Lightbulb, AlertTriangle
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, PieChart, Pie, Cell, Legend, LineChart, Line, ReferenceLine,
-    ScatterChart, Scatter, ZAxis, RadialBarChart, RadialBar, ComposedChart
+    RadialBarChart, RadialBar
 } from 'recharts';
 import { KPICard, ChartCard, ProgressBar } from './components';
-import { formatCurrency, formatPercent } from './utils';
+import { formatCurrency } from './utils';
 import type { Transaction, Category, Goal, Budget } from './types';
 
+type SparklinePoint = {
+    month: string;
+    income: number;
+    expense: number;
+    balance: number;
+};
+
+type FinancialSummary = {
+    income: number;
+    expenses: number;
+    savings: number;
+    previousBalance: number;
+    incomeVariation: number;
+    expenseVariation: number;
+    savingsVariation: number;
+    sparklineData: SparklinePoint[];
+};
+
 interface DashboardProps {
-    summary: any;
+    summary: FinancialSummary;
     transactions: Transaction[];
     categories: Category[];
     goals: Goal[];
@@ -25,16 +42,26 @@ interface DashboardProps {
     onYearChange: (year: number) => void;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type TooltipPayload = {
+    color?: string;
+    name?: string;
+    value?: number;
+};
+
+const getTransactionCategoryId = (transaction: Transaction) => transaction.categoryId?.toString();
+
+const safePercent = (value: number, total: number) => total > 0 ? (value / total) * 100 : 0;
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipPayload[]; label?: string }) => {
     if (active && payload && payload.length) {
         return (
             <div className="custom-tooltip glass-strong">
                 <p className="text-xs text-text-secondary mb-1">{label}</p>
-                {payload.map((entry: any, index: number) => (
+                {payload.map((entry, index) => (
                     <div key={index} className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
                         <p className="text-sm font-bold text-text-primary">
-                            {entry.name}: {formatCurrency(entry.value)}
+                            {entry.name}: {formatCurrency(entry.value ?? 0)}
                         </p>
                     </div>
                 ))}
@@ -50,13 +77,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
     // Chart 1: Cash Flow (Area)
     const cashFlowData = summary.sparklineData;
+    const selectedMonthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+    const monthBudgets = budgets.filter(b => b.month === selectedMonthKey);
 
     // Chart 3: Distribution by Category
     const categoryData = categories
         .map(cat => {
             const spent = transactions
                 .filter(t => {
-                    const tCatId = (t.categoryId || (t as any).category || (t as any).category_id)?.toString();
+                    const tCatId = getTransactionCategoryId(t);
                     return tCatId === cat.id?.toString() && t.type === 'expense';
                 })
                 .reduce((sum, t) => sum + t.amount, 0);
@@ -66,11 +95,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .sort((a, b) => b.value - a.value);
 
     // Chart 5: Budget vs Spent
-    const budgetData = budgets.map(b => {
+    const budgetData = monthBudgets.map(b => {
         const cat = categories.find(c => c.id?.toString() === b.categoryId?.toString());
         const spent = transactions
             .filter(t => {
-                const tCatId = (t.categoryId || (t as any).category || (t as any).category_id)?.toString();
+                const tCatId = getTransactionCategoryId(t);
                 return tCatId === b.categoryId?.toString() && t.type === 'expense';
             })
             .reduce((sum, t) => sum + t.amount, 0);
@@ -78,7 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             name: cat?.name || 'Outros',
             limit: b.limit,
             spent: spent,
-            percent: (spent / b.limit) * 100,
+            percent: safePercent(spent, b.limit),
             color: spent > b.limit ? 'var(--color-negative)' : (spent > b.limit * 0.8 ? 'var(--color-warning)' : 'var(--color-positive)')
         };
     }).slice(0, 5);
@@ -92,7 +121,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             name: t.description,
             amount: t.amount,
             category: categories.find(c => {
-                const tCatId = t.categoryId || (t as any).category || (t as any).category_id;
+                const tCatId = getTransactionCategoryId(t);
                 return c.id === tCatId;
             })?.name || 'Outros'
         }));
@@ -100,9 +129,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     // Chart 8: Goals Progress
     const radialData = goals.map(g => ({
         name: g.name,
-        uv: (g.currentAmount / g.targetAmount) * 100,
+        uv: safePercent(g.currentAmount, g.targetAmount),
         fill: g.color
     }));
+
+    const savingsRate = safePercent(summary.savings, summary.income);
+    const topCategory = categoryData[0];
+    const criticalBudgets = budgetData.filter(item => item.percent >= 80);
 
     return (
         <div className="space-y-8 animate-fade-in-up">
@@ -167,7 +200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span className="text-text-secondary">Receitas:</span>
                         <span className="font-bold font-numbers text-positive">{formatCurrency(summary.income)}</span>
                     </div>
-                    <span className="text-text-muted">−</span>
+                    <span className="text-text-muted">-</span>
                     <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-negative" />
                         <span className="text-text-secondary">Despesas:</span>
@@ -180,6 +213,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span className={`font-bold font-numbers text-base ${(summary.previousBalance + summary.savings) >= 0 ? 'text-accent' : 'text-negative'}`}>
                             {formatCurrency(summary.previousBalance + summary.savings)}
                         </span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="insight-panel">
+                    <Lightbulb size={20} className="text-accent" />
+                    <div>
+                        <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Leitura do mês</p>
+                        <p className="text-sm text-text-primary">
+                            {summary.income > 0
+                                ? `Você guardou ${savingsRate.toFixed(0)}% das receitas deste período.`
+                                : 'Sem receitas registradas neste período.'}
+                        </p>
+                    </div>
+                </div>
+                <div className="insight-panel">
+                    <TrendingDown size={20} className="text-negative" />
+                    <div>
+                        <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Maior gasto</p>
+                        <p className="text-sm text-text-primary">
+                            {topCategory ? `${topCategory.name}: ${formatCurrency(topCategory.value)}` : 'Nenhuma despesa no mês.'}
+                        </p>
+                    </div>
+                </div>
+                <div className="insight-panel">
+                    <AlertTriangle size={20} className={criticalBudgets.length > 0 ? 'text-warning' : 'text-positive'} />
+                    <div>
+                        <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Orçamentos</p>
+                        <p className="text-sm text-text-primary">
+                            {criticalBudgets.length > 0
+                                ? `${criticalBudgets.length} orçamento(s) acima de 80%.`
+                                : 'Tudo tranquilo nos limites ativos.'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -200,7 +267,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     variation={summary.incomeVariation}
                     icon={<TrendingUp size={24} />}
                     color="positive"
-                    sparklineData={summary.sparklineData.map((d: any) => ({ ...d, balance: d.income }))}
+                    sparklineData={summary.sparklineData.map((d) => ({ ...d, balance: d.income }))}
                 />
                 <KPICard
                     title="Despesas do Mês"
@@ -208,7 +275,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     variation={summary.expenseVariation}
                     icon={<TrendingDown size={24} />}
                     color="negative"
-                    sparklineData={summary.sparklineData.map((d: any) => ({ ...d, balance: d.expense }))}
+                    sparklineData={summary.sparklineData.map((d) => ({ ...d, balance: d.expense }))}
                 />
                 <KPICard
                     title="Economia"

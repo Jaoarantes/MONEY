@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
-    TrendingUp, TrendingDown, Wallet, PiggyBank,
-    ChevronUp, ChevronDown, MoreVertical, Trash2, Edit2,
+    ChevronUp, ChevronDown,
     X, Check, AlertCircle, Loader2
 } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { formatCurrency, cn } from './utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { ToastMessage } from './types';
 
 // ==================== KPI CARD ====================
 interface KPICardProps {
@@ -16,7 +16,7 @@ interface KPICardProps {
     variation: number;
     icon: React.ReactNode;
     color: 'accent' | 'positive' | 'negative' | 'warning';
-    sparklineData: any[];
+    sparklineData: Array<Record<string, number | string>>;
 }
 
 export const KPICard: React.FC<KPICardProps> = ({ title, value, variation, icon, color, sparklineData }) => {
@@ -116,7 +116,7 @@ interface ProgressBarProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
     value, max, color = 'var(--color-accent)', label, showPercent
 }) => {
-    const percent = Math.min(Math.max((value / max) * 100, 0), 100);
+    const percent = max > 0 ? Math.min(Math.max((value / max) * 100, 0), 100) : 0;
 
     return (
         <div className="w-full space-y-2">
@@ -245,7 +245,7 @@ export const CategoryBadge: React.FC<{ name: string; color: string }> = ({ name,
 );
 
 // ==================== TOAST ====================
-export const ToastContainer: React.FC<{ toasts: any[], onRemove: (id: string) => void }> = ({ toasts, onRemove }) => (
+export const ToastContainer: React.FC<{ toasts: ToastMessage[], onRemove: (id: string) => void }> = ({ toasts, onRemove }) => (
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
         <AnimatePresence>
             {toasts.map((toast) => (
@@ -256,12 +256,14 @@ export const ToastContainer: React.FC<{ toasts: any[], onRemove: (id: string) =>
                     exit={{ opacity: 0, x: 100 }}
                     className={cn(
                         "glass-strong p-4 rounded-xl shadow-xl border-l-4 flex items-center gap-3 min-w-[300px]",
-                        toast.type === 'success' ? "border-positive" : "border-negative"
+                        toast.type === 'success' ? "border-positive" :
+                            toast.type === 'warning' ? "border-warning" :
+                                toast.type === 'info' ? "border-accent" : "border-negative"
                     )}
                 >
                     {toast.type === 'success' ?
                         <Check className="text-positive" size={20} /> :
-                        <AlertCircle className="text-negative" size={20} />
+                        <AlertCircle className={toast.type === 'warning' ? "text-warning" : toast.type === 'info' ? "text-accent" : "text-negative"} size={20} />
                     }
                     <p className="text-sm font-medium">{toast.message}</p>
                     <button onClick={() => onRemove(toast.id)} className="ml-auto text-text-muted hover:text-text-primary">
@@ -270,16 +272,6 @@ export const ToastContainer: React.FC<{ toasts: any[], onRemove: (id: string) =>
                 </motion.div>
             ))}
         </AnimatePresence>
-    </div>
-);
-
-// ==================== EMPTY STATE ====================
-export const EmptyState: React.FC<{ message?: string }> = ({ message = "Nenhum dado encontrado" }) => (
-    <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted opacity-50">
-        <div className="p-4 rounded-full bg-bg-surface-soft mb-4">
-            <AlertCircle size={48} />
-        </div>
-        <p className="text-lg font-medium">{message}</p>
     </div>
 );
 

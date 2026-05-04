@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Settings as SettingsIcon, Trash2, Download,
+    Settings as SettingsIcon, Trash2, Download, Upload,
     Moon, Sun, Calendar, Plus,
     AlertCircle, RefreshCcw, CreditCard, Tag,
     Edit2, Check, Palette, Shield
@@ -12,9 +12,9 @@ interface SettingsPageProps {
     settings: AppSettings;
     categories: Category[];
     onUpdateSettings: (s: AppSettings) => void;
-    onAddCategory: (cat: Omit<Category, 'id' | 'user_id'>) => Promise<any>;
-    onUpdateCategory: (id: string, updates: Partial<Category>) => Promise<any>;
-    onDeleteCategory: (id: string) => Promise<any>;
+    onAddCategory: (cat: Omit<Category, 'id' | 'user_id'>) => Promise<Category | null>;
+    onUpdateCategory: (id: string, updates: Partial<Category>) => Promise<Category | null>;
+    onDeleteCategory: (id: string) => Promise<boolean>;
     onExportData: () => void;
     onImportData: (data: string) => void;
     onResetData: () => void;
@@ -80,12 +80,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         });
     };
 
+    const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        onImportData(text);
+        event.target.value = '';
+    };
+
     return (
         <div className="max-w-5xl space-y-8 animate-fade-in-up pb-20">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary">Configurações do App</h1>
-                    <p className="text-text-secondary">Personalize sua experiência, gerencie dados e estéticas.</p>
+                    <p className="text-text-secondary">Personalize sua experiência, gerencie dados e estáticas.</p>
                 </div>
 
                 <div className="flex bg-white/5 p-1 rounded-2xl border border-border">
@@ -97,7 +105,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     ].map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
+                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
                             className={cn(
                                 "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
                                 activeTab === tab.id ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-text-muted hover:text-text-secondary"
@@ -184,6 +192,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 />
                             </div>
 
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-text-muted uppercase">Tipo</label>
+                                <select
+                                    value={newCatType}
+                                    onChange={(e) => setNewCatType(e.target.value as Category['type'])}
+                                    className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:border-accent transition-all"
+                                >
+                                    <option value="income">Receita</option>
+                                    <option value="expense">Despesa</option>
+                                    <option value="both">Misto</option>
+                                </select>
+                            </div>
+
 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-text-muted uppercase flex justify-between">
@@ -236,7 +257,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                             />
                                             <select
                                                 value={cat.type}
-                                                onChange={(e) => handleUpdateCategory(cat.id, { type: e.target.value as any })}
+                                                onChange={(e) => handleUpdateCategory(cat.id, { type: e.target.value as Category['type'] })}
                                                 className="flex-1 bg-bg-input border border-border rounded-lg px-2 py-1 text-xs"
                                             >
                                                 <option value="income">Receita</option>
@@ -265,7 +286,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                         </div>
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => setEditingCatId(cat.id)} className="p-2 hover:bg-white/5 rounded-lg transition-all text-text-secondary"><Edit2 size={16} /></button>
-                                            <button onClick={() => onDeleteCategory(cat.id)} className="p-2 hover:bg-negative/10 text-negative rounded-lg transition-all"><Trash2 size={16} /></button>
+                                            <button onClick={() => window.confirm('Excluir esta categoria?') && onDeleteCategory(cat.id)} className="p-2 hover:bg-negative/10 text-negative rounded-lg transition-all"><Trash2 size={16} /></button>
                                         </div>
                                     </div>
                                 )}
@@ -350,6 +371,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 <p className="text-xs text-text-muted">Exporta todos os dados do banco de dados.</p>
                             </div>
                         </button>
+
+                        <label className="flex items-center gap-4 p-6 bg-white/5 border border-border rounded-2xl hover:bg-white/10 transition-all group cursor-pointer">
+                            <input
+                                type="file"
+                                accept="application/json,.json"
+                                onChange={handleImportFile}
+                                className="hidden"
+                            />
+                            <div className="p-3 rounded-xl bg-warning/20 text-warning group-hover:scale-110 transition-transform">
+                                <Upload size={24} />
+                            </div>
+                            <div className="text-left">
+                                <h3 className="font-bold">Importar Backup</h3>
+                                <p className="text-xs text-text-muted">Importa categorias, transações, metas, orçamentos e preferências.</p>
+                            </div>
+                        </label>
 
                         <div className="flex items-center gap-4 p-6 bg-white/5 border border-border rounded-2xl opacity-50 cursor-not-allowed">
                             <div className="p-3 rounded-xl bg-positive/20 text-positive">

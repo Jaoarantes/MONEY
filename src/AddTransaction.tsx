@@ -11,7 +11,7 @@ import type { Category, Transaction } from './types';
 interface AddTransactionProps {
     categories: Category[];
     paymentMethods: string[];
-    onSubmit: (tx: Omit<Transaction, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => void;
+    onSubmit: (tx: Omit<Transaction, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
     onCancel?: () => void;
     initialData?: Transaction;
 }
@@ -223,7 +223,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             </div>
                             <div>
                                 <p className="font-bold">Lançamento Recorrente</p>
-                                <p className="text-xs text-text-secondary">Repetir esta transação automaticamente</p>
+                                <p className="text-xs text-text-secondary">Cria este lançamento e as próximas 11 ocorrências</p>
                             </div>
                         </div>
                         <button
@@ -252,11 +252,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-text-muted uppercase">Frequência</label>
                                     <div className="grid grid-cols-4 gap-2">
-                                        {['daily', 'weekly', 'monthly', 'yearly'].map((f) => (
+                                        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((f) => (
                                             <button
                                                 key={f}
                                                 type="button"
-                                                onClick={() => setFrequency(f as any)}
+                                                onClick={() => setFrequency(f)}
                                                 className={cn(
                                                     "py-2 rounded-lg text-xs font-bold transition-all border",
                                                     frequency === f ? "bg-accent border-accent text-text-on-accent shadow-lg shadow-accent/20" : "bg-bg-surface-soft border-border text-text-muted hover:text-text-primary"

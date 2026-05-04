@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from './supabase';
 import {
     Mail, Lock, ArrowRight, Loader2,
-    CheckCircle2, AlertCircle, Globe, Shield
+    CheckCircle2, AlertCircle, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
@@ -35,8 +35,8 @@ export const AuthPage: React.FC = () => {
                 });
                 if (signInError) throw signInError;
             }
-        } catch (err: any) {
-            setError(err.message || 'Ocorreu um erro na autenticação.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Ocorreu um erro na autenticação.');
         } finally {
             setLoading(false);
         }
@@ -44,10 +44,6 @@ export const AuthPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-bg-primary flex items-center justify-center p-6 relative overflow-hidden">
-            {/* Dynamic Background Glows */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent/10 rounded-full blur-[120px] animate-pulse" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-positive/5 rounded-full blur-[120px] animate-pulse delay-700" />
-
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -62,7 +58,7 @@ export const AuthPage: React.FC = () => {
                         M
                     </motion.div>
                     <h1 className="text-4xl font-bold tracking-tight text-white mb-2">MONEY</h1>
-                    <p className="text-text-secondary">Luxury Financial Management</p>
+                    <p className="text-text-secondary">Finanças pessoais com clareza</p>
                 </div>
 
                 {/* Auth Card */}
@@ -171,7 +167,7 @@ export const AuthPage: React.FC = () => {
                 </div>
 
                 <p className="text-center mt-10 text-text-muted text-xs">
-                    Built for the elite. 100% Cloud Persistence.
+                    Dados sincronizados com Supabase.
                 </p>
             </motion.div>
         </div>

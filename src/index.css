@@ -75,7 +75,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .glass-strong {
@@ -83,7 +83,7 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-border-light);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .glass-card {
@@ -91,31 +91,31 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
 .glass-card:hover {
   border-color: var(--color-border-light);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
 }
 
 /* ==================== KPI CARD GLOWS ==================== */
 
 .glow-accent {
-  box-shadow: 0 0 20px var(--color-accent-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 12px var(--color-accent-glow), 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .glow-positive {
-  box-shadow: 0 0 20px var(--color-positive-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 12px var(--color-positive-glow), 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .glow-negative {
-  box-shadow: 0 0 20px var(--color-negative-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 12px var(--color-negative-glow), 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .glow-warning {
-  box-shadow: 0 0 20px var(--color-warning-glow), 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 12px var(--color-warning-glow), 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 /* ==================== ANIMATIONS ==================== */
@@ -237,6 +237,21 @@
 
 .theme-light .balance-strip {
   border-left-color: var(--color-accent);
+}
+
+.insight-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+  min-height: 92px;
+}
+
+.theme-light .insight-panel {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 /* ==================== MONTH PICKER ==================== */

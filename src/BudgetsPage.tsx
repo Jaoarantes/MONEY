@@ -1,29 +1,37 @@
 import React, { useState } from 'react';
 import {
     Plus, Edit2, Trash2, PieChart,
-    AlertTriangle, CheckCircle2, TrendingUp,
-    Receipt
+    AlertTriangle, CheckCircle2, Calendar,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { formatCurrency, cn } from './utils';
-import { ProgressBar, Modal, CategoryBadge } from './components';
+import { formatCurrency } from './utils';
+import { ProgressBar, Modal } from './components';
 import type { Budget, Category, Transaction } from './types';
 
 interface BudgetsPageProps {
     budgets: Budget[];
     categories: Category[];
     transactions: Transaction[];
-    onAddBudget: (b: Omit<Budget, 'id' | 'user_id'>) => void;
-    onUpdateBudget: (id: string, b: Partial<Budget>) => void;
-    onDeleteBudget: (id: string) => void;
+    selectedMonth: number;
+    selectedYear: number;
+    onMonthChange: (month: number) => void;
+    onYearChange: (year: number) => void;
+    onAddBudget: (b: Omit<Budget, 'id' | 'user_id'>) => void | Promise<void>;
+    onUpdateBudget: (id: string, b: Partial<Budget>) => void | Promise<void>;
+    onDeleteBudget: (id: string) => void | Promise<void>;
 }
 
 export const BudgetsPage: React.FC<BudgetsPageProps> = ({
-    budgets, categories, transactions, onAddBudget, onUpdateBudget, onDeleteBudget
+    budgets, categories, transactions,
+    selectedMonth, selectedYear, onMonthChange, onYearChange,
+    onAddBudget, onUpdateBudget, onDeleteBudget
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
     const [category, setCategory] = useState('');
     const [limit, setLimit] = useState('0,00');
+    const selectedMonthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+    const monthBudgets = budgets.filter(b => b.month === selectedMonthKey);
 
     // Form State
     const allCategoriesSorted = [...categories]
@@ -31,7 +39,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
 
     const availableCategories = editingBudget
         ? allCategoriesSorted
-        : allCategoriesSorted.filter(cat => !budgets.some(b => b.categoryId === cat.id));
+        : allCategoriesSorted.filter(cat => !monthBudgets.some(b => b.categoryId === cat.id));
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,7 +51,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
             onAddBudget({
                 categoryId: category,
                 limit: limitNum,
-                month: new Date().toISOString().slice(0, 7),
+                month: selectedMonthKey,
                 spent: 0
             });
         }
@@ -68,22 +76,59 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                     <h1 className="text-3xl font-bold text-text-primary">Orçamentos</h1>
                     <p className="text-text-secondary">Defina limites mensais para cada categoria de gasto.</p>
                 </div>
-                <button
-                    onClick={() => { setEditingBudget(null); setCategory(''); setLimit('0,00'); setIsModalOpen(true); }}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-105 transition-all outline-none"
-                >
-                    <Plus size={20} />
-                    <span>Novo Orçamento</span>
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="month-picker">
+                        <button
+                            className="month-picker-btn"
+                            onClick={() => {
+                                if (selectedMonth === 0) {
+                                    onMonthChange(11);
+                                    onYearChange(selectedYear - 1);
+                                } else {
+                                    onMonthChange(selectedMonth - 1);
+                                }
+                            }}
+                            aria-label="Mês anterior"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <div className="month-picker-label">
+                            <Calendar size={16} className="text-accent" />
+                            <span>
+                                {new Date(selectedYear, selectedMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                            </span>
+                        </div>
+                        <button
+                            className="month-picker-btn"
+                            onClick={() => {
+                                if (selectedMonth === 11) {
+                                    onMonthChange(0);
+                                    onYearChange(selectedYear + 1);
+                                } else {
+                                    onMonthChange(selectedMonth + 1);
+                                }
+                            }}
+                            aria-label="Próximo mês"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => { setEditingBudget(null); setCategory(''); setLimit('0,00'); setIsModalOpen(true); }}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-105 transition-all outline-none"
+                    >
+                        <Plus size={20} />
+                        <span>Novo Orçamento</span>
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {budgets.map((budget) => {
+                {monthBudgets.map((budget) => {
                     const category = categories.find(c => c.id === budget.categoryId);
                     const spent = transactions
-                        .filter(t => t.categoryId === budget.categoryId && t.type === 'expense')
+                        .filter(t => t.categoryId === budget.categoryId && t.type === 'expense' && t.date.startsWith(selectedMonthKey))
                         .reduce((sum, t) => sum + t.amount, 0);
-                    const percent = (spent / budget.limit) * 100;
                     const isOver = spent > budget.limit;
                     const isWarning = spent > budget.limit * 0.8;
 
@@ -155,7 +200,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                         </div>
                     );
                 })}
-                {budgets.length === 0 && (
+                {monthBudgets.length === 0 && (
                     <div className="md:col-span-2 xl:col-span-3 glass p-12 text-center text-text-muted">
                         Nenhum orçamento definido. Clique em "Novo Orçamento" para começar a planejar seus gastos.
                     </div>

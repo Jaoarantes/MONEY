@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
+import { Printer, Info, Calendar } from 'lucide-react';
 import {
-    Printer, TrendingUp, TrendingDown,
-    Calendar, FileText, Download,
-    ArrowUpRight, ArrowDownRight, Info
-} from 'lucide-react';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
+    XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
     AreaChart, Area, Legend
 } from 'recharts';
-import { formatCurrency, formatPercent } from './utils';
+import { formatCurrency } from './utils';
 import { ChartCard } from './components';
 import type { Transaction, Category } from './types';
 
@@ -19,15 +15,23 @@ interface ReportsPageProps {
 }
 
 export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categories }) => {
-    const [period, setPeriod] = useState('year'); // 'month' | 'year' | 'all'
+    const currentYear = new Date().getFullYear();
+    const availableYears = Array.from(new Set([
+        currentYear,
+        ...transactions.map(t => new Date(t.date).getFullYear())
+    ])).sort((a, b) => b - a);
+    const [selectedYear, setSelectedYear] = useState(currentYear);
+
+    const getTransactionCategoryId = (transaction: Transaction) => transaction.categoryId?.toString();
+    const safePercent = (value: number, total: number) => total > 0 ? (value / total) * 100 : 0;
 
     // Processing data for the report
-    const reportData = (period === 'year' ? Array.from({ length: 12 }, (_, i) => i) : []).map(m => {
-        const monthTx = transactions.filter(t => new Date(t.date).getMonth() === m && new Date(t.date).getFullYear() === 2026);
+    const reportData = Array.from({ length: 12 }, (_, i) => i).map(m => {
+        const monthTx = transactions.filter(t => new Date(t.date).getMonth() === m && new Date(t.date).getFullYear() === selectedYear);
         const income = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
         const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
         return {
-            name: new Date(2026, m).toLocaleDateString('pt-BR', { month: 'short' }),
+            name: new Date(selectedYear, m).toLocaleDateString('pt-BR', { month: 'short' }),
             receita: income,
             despesa: expense,
             saldo: income - expense
@@ -38,7 +42,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
         .map(c => ({
             name: c.name,
             value: transactions.filter(t => {
-                const tCatId = (t.categoryId || (t as any).category || (t as any).category_id)?.toString();
+                const tCatId = getTransactionCategoryId(t);
                 return tCatId === c.id?.toString() && t.type === 'expense';
             }).reduce((s, t) => s + t.amount, 0),
             color: c.color
@@ -57,13 +61,25 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                     <h1 className="text-3xl font-bold text-text-primary">Relatórios</h1>
                     <p className="text-text-secondary">Análise profunda da seu desempenho financeiro anual.</p>
                 </div>
-                <button
-                    onClick={() => window.print()}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-border rounded-xl font-bold hover:bg-white/10 transition-all"
-                >
-                    <Printer size={20} />
-                    <span>Imprimir PDF</span>
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border border-border rounded-xl">
+                        <Calendar size={18} className="text-accent" />
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(Number(e.target.value))}
+                            className="bg-transparent font-bold focus:outline-none"
+                        >
+                            {availableYears.map(year => <option key={year} value={year}>{year}</option>)}
+                        </select>
+                    </div>
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-border rounded-xl font-bold hover:bg-white/10 transition-all"
+                    >
+                        <Printer size={20} />
+                        <span>Imprimir PDF</span>
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -81,7 +97,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                 </div>
             </div>
 
-            <ChartCard title="Evolução Mensal (2026)" subtitle="Comparativo de entradas e saídas ao longo do ano">
+            <ChartCard title={`Evolução Mensal (${selectedYear})`} subtitle="Comparativo de entradas e saídas ao longo do ano">
                 <ResponsiveContainer width="100%" height={400}>
                     <AreaChart data={reportData}>
                         <defs>
@@ -136,14 +152,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                                         <div
                                             className="h-full rounded-full transition-all duration-1000"
                                             style={{
-                                                width: `${(item.value / totalExpense) * 100}%`,
+                                                width: `${safePercent(item.value, totalExpense)}%`,
                                                 backgroundColor: item.color
                                             }}
                                         />
                                     </div>
                                 </div>
                                 <div className="text-xs font-bold text-text-muted w-12 text-right">
-                                    {((item.value / totalExpense) * 100).toFixed(1)}%
+                                    {safePercent(item.value, totalExpense).toFixed(1)}%
                                 </div>
                             </div>
                         ))}
@@ -157,8 +173,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                     <h2 className="text-lg font-bold">Resumo Fiscal</h2>
                 </div>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                    Seu balanço geral acumulado é de <b className="text-text-primary">{formatCurrency(totalSavings)}</b>.
-                    Sua maior fonte de despesa é <b>{categorySpending[0]?.name}</b>, representando {((categorySpending[0]?.value / totalExpense) * 100).toFixed(1)}% dos seus gastos totais.
+                    Seu balanão geral acumulado é de <b className="text-text-primary">{formatCurrency(totalSavings)}</b>.
+                    Sua maior fonte de despesa é <b>{categorySpending[0]?.name || 'nenhuma categoria'}</b>, representando {safePercent(categorySpending[0]?.value || 0, totalExpense).toFixed(1)}% dos seus gastos totais.
                     Recomendamos revisar orçamentos se a taxa de poupança estiver abaixo de 20%.
                 </p>
             </div>

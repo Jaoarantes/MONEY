@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
     Plus, Target, TrendingUp, Calendar,
-    Trash2, Edit2, PiggyBank, CheckCircle2,
-    AlertTriangle
+    Trash2, Edit2, CheckCircle2
 } from 'lucide-react';
 import { formatCurrency, cn } from './utils';
 import { ProgressBar, Modal } from './components';
@@ -12,10 +11,10 @@ import type { Goal } from './types';
 
 interface GoalsPageProps {
     goals: Goal[];
-    onAddGoal: (g: Omit<Goal, 'id' | 'user_id'>) => void;
-    onUpdateGoal: (id: string, g: Partial<Goal>) => void;
-    onDeleteGoal: (id: string) => void;
-    onAddContribution: (id: string, amount: number) => void;
+    onAddGoal: (g: Omit<Goal, 'id' | 'user_id'>) => void | Promise<void>;
+    onUpdateGoal: (id: string, g: Partial<Goal>) => void | Promise<void>;
+    onDeleteGoal: (id: string) => void | Promise<void>;
+    onAddContribution: (id: string, amount: number) => void | Promise<void>;
 }
 
 export const GoalsPage: React.FC<GoalsPageProps> = ({
@@ -306,7 +305,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
             <Modal isOpen={isContributionModalOpen} onClose={() => setIsContributionModalOpen(false)} title="Adicionar Aporte">
                 <form onSubmit={handleContribution} className="space-y-6">
                     <div className="text-center mb-4">
-                        <p className="text-text-secondary text-sm">Quanto você deseja poupar para:</p>
+                        <p className="text-text-secondary text-sm">Quanto vocé deseja poupar para:</p>
                         <p className="text-lg font-bold text-text-primary">{selectedGoal?.name}</p>
                     </div>
 

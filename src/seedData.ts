@@ -42,7 +42,7 @@ const expenseDescriptions = [
     'Almoço restaurante', 'Uber para o trabalho', 'Netflix mensal', 'Feira do mês',
     'Conta de luz', 'Farmácia', 'Gasolina', 'Academia mensal', 'Internet fibra',
     'Café especial', 'Manutenção carro', 'Curso online', 'Roupas nova', 'Jantar fora',
-    'Conta de água', 'Dentista', 'Cinema', 'Spotify premium', 'Livro técnico',
+    'Conta de Água', 'Dentista', 'Cinema', 'Spotify premium', 'Livro técnico',
     'Supermercado semanal', 'Seguro auto', 'Plano de saúde', 'Presente aniversário',
 ];
 

@@ -15,7 +15,7 @@ import type { Transaction, Category } from './types';
 interface TransactionsPageProps {
     transactions: Transaction[];
     categories: Category[];
-    onDelete: (id: string) => void;
+    onDelete: (id: string) => void | Promise<void>;
     onEdit: (tx: Transaction) => void;
     selectedMonth: number;
     selectedYear: number;
@@ -29,11 +29,20 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 }) => {
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterPayment, setFilterPayment] = useState('all');
+    const [minAmount, setMinAmount] = useState('');
+    const [maxAmount, setMaxAmount] = useState('');
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [page, setPage] = useState(1);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const itemsPerPage = 10;
+    const paymentMethods = Array.from(new Set(transactions.map(t => t.paymentMethod).filter(Boolean))) as string[];
+
+    React.useEffect(() => {
+        setPage(1);
+    }, [search, filterType, filterCategory, filterPayment, minAmount, maxAmount, selectedMonth, selectedYear]);
 
     const filteredTransactions = useMemo(() => {
         return transactions
@@ -42,15 +51,20 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 const matchesSearch = t.description.toLowerCase().includes(searchLower) ||
                     (t.notes && t.notes.toLowerCase().includes(searchLower));
 
+                const min = minAmount ? Number(minAmount) : 0;
+                const max = maxAmount ? Number(maxAmount) : Number.POSITIVE_INFINITY;
                 const matchesType = filterType === 'all' || t.type === filterType;
-                return matchesSearch && matchesType;
+                const matchesCategory = filterCategory === 'all' || t.categoryId === filterCategory;
+                const matchesPayment = filterPayment === 'all' || t.paymentMethod === filterPayment;
+                const matchesAmount = t.amount >= min && t.amount <= max;
+                return matchesSearch && matchesType && matchesCategory && matchesPayment && matchesAmount;
             })
             .sort((a, b) => {
                 const factor = sortOrder === 'asc' ? 1 : -1;
                 if (sortField === 'date') return (a.date.localeCompare(b.date)) * factor;
                 return (a.amount - b.amount) * factor;
             });
-    }, [transactions, search, filterType, sortField, sortOrder]);
+    }, [transactions, search, filterType, filterCategory, filterPayment, minAmount, maxAmount, sortField, sortOrder]);
 
     const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
     const paginatedTransactions = filteredTransactions.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -141,10 +155,10 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     />
                 </div>
 
-                <div className="md:col-span-3">
+                <div className="md:col-span-2">
                     <select
                         value={filterType}
-                        onChange={(e) => setFilterType(e.target.value as any)}
+                        onChange={(e) => setFilterType(e.target.value as typeof filterType)}
                         className="w-full bg-bg-input border border-border rounded-xl py-2 px-4 text-sm focus:outline-none focus:border-accent transition-all"
                     >
                         <option value="all">Todos os tipos</option>
@@ -157,7 +171,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     <select
                         value={`${sortField}-${sortOrder}`}
                         onChange={(e) => {
-                            const [field, order] = e.target.value.split('-') as [any, any];
+                            const [field, order] = e.target.value.split('-') as [typeof sortField, typeof sortOrder];
                             setSortField(field);
                             setSortOrder(order);
                         }}
@@ -170,6 +184,56 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     </select>
                 </div>
 
+                <div className="md:col-span-3">
+                    <select
+                        value={filterCategory}
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                        className="w-full bg-bg-input border border-border rounded-xl py-2 px-4 text-sm focus:outline-none focus:border-accent transition-all"
+                    >
+                        <option value="all">Todas as categorias</option>
+                        {categories.map(category => (
+                            <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="md:col-span-3">
+                    <select
+                        value={filterPayment}
+                        onChange={(e) => setFilterPayment(e.target.value)}
+                        className="w-full bg-bg-input border border-border rounded-xl py-2 px-4 text-sm focus:outline-none focus:border-accent transition-all"
+                    >
+                        <option value="all">Todos os pagamentos</option>
+                        {paymentMethods.map(method => (
+                            <option key={method} value={method}>{method}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="md:col-span-2">
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Valor mín."
+                        value={minAmount}
+                        onChange={(e) => setMinAmount(e.target.value)}
+                        className="w-full bg-bg-input border border-border rounded-xl py-2 px-4 text-sm focus:outline-none focus:border-accent transition-all"
+                    />
+                </div>
+
+                <div className="md:col-span-2">
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Valor máx."
+                        value={maxAmount}
+                        onChange={(e) => setMaxAmount(e.target.value)}
+                        className="w-full bg-bg-input border border-border rounded-xl py-2 px-4 text-sm focus:outline-none focus:border-accent transition-all"
+                    />
+                </div>
+
                 <div className="md:col-span-2 flex items-center justify-center gap-2 text-sm text-text-secondary">
                     <Filter size={16} />
                     <span>{filteredTransactions.length} itens</span>
@@ -178,7 +242,72 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
             {/* Transactions Table */}
             <div className="glass overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="md:hidden divide-y divide-border">
+                    {paginatedTransactions.map((tx) => {
+                        const category = categories.find(c => c.id === tx.categoryId);
+                        return (
+                            <div key={tx.id} className="p-4 space-y-4">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                                            tx.type === 'income' ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"
+                                        )}>
+                                            {tx.type === 'income' ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-semibold text-text-primary truncate">{tx.description}</p>
+                                            <p className="text-xs text-text-muted">{format(parseISO(tx.date), 'dd MMM, yyyy')}</p>
+                                        </div>
+                                    </div>
+                                    <span className={cn(
+                                        "font-bold font-numbers whitespace-nowrap",
+                                        tx.type === 'income' ? "text-positive" : "text-negative"
+                                    )}>
+                                        {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between gap-3">
+                                    <CategoryBadge name={category?.name || 'Outros'} color={category?.color || '#8888A0'} />
+                                    <span className="text-xs text-text-secondary">{tx.paymentMethod || '—'}</span>
+                                </div>
+
+                                {(tx.notes || tx.recurrent) && (
+                                    <div className="rounded-xl bg-bg-surface-soft p-3 text-xs text-text-secondary">
+                                        {tx.recurrent && <p className="mb-1 font-bold text-accent">Recorrente</p>}
+                                        {tx.notes && <p>{tx.notes}</p>}
+                                    </div>
+                                )}
+
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={() => onEdit(tx)}
+                                        className="p-2 hover:bg-accent/10 hover:text-accent rounded-lg text-text-muted transition-all"
+                                        aria-label="Editar transação"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(tx.id)}
+                                        className="p-2 hover:bg-negative/10 hover:text-negative rounded-lg text-text-muted transition-all"
+                                        aria-label="Excluir transação"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {paginatedTransactions.length === 0 && (
+                        <div className="py-16 text-center">
+                            <FileText className="mx-auto text-text-muted mb-4 opacity-20" size={44} />
+                            <p className="text-text-secondary">Nenhuma transação encontrada.</p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-border bg-bg-surface-soft/40">
@@ -194,7 +323,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         <tbody className="divide-y divide-border">
                             {paginatedTransactions.map((tx) => {
                                 // Robust category resolution
-                                const catId = tx.categoryId || (tx as any).category_id || (tx as any).category;
+                                const catId = tx.categoryId;
                                 const category = categories.find(c => c.id === catId);
                                 const isExpanded = expandedId === tx.id;
 
