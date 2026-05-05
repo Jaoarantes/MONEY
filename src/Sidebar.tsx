@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     LayoutDashboard, Receipt, PlusCircle, Target,
-    BarChart3, Settings, PieChart, Menu, X,
+    BarChart3, Settings, PieChart, Menu, X, TrendingUp,
     Sun, Moon, ChevronRight, LogOut, User
 } from 'lucide-react';
 import { cn } from './utils';
@@ -23,6 +23,7 @@ const MENU_ITEMS = [
     { id: 'add', label: 'Novo Lançamento', icon: PlusCircle },
     { id: 'budgets', label: 'Orçamentos', icon: PieChart },
     { id: 'goals', label: 'Metas', icon: Target },
+    { id: 'investments', label: 'Investimentos', icon: TrendingUp },
     { id: 'reports', label: 'Relatórios', icon: BarChart3 },
     { id: 'settings', label: 'Ajustes', icon: Settings },
 ] as const;

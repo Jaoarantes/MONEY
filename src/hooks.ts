@@ -9,7 +9,7 @@ import {
     parseISO, isWithinInterval, addDays, addWeeks, addMonths, addYears, format
 } from 'date-fns';
 import type {
-    Transaction, Category, Goal, Budget,
+    Transaction, Category, Goal, Budget, Investment,
     AppSettings, ToastMessage
 } from './types';
 import { getMonthKey } from './utils';
@@ -33,6 +33,22 @@ type GoalUpdates = {
     current_amount?: number;
     deadline?: string;
     category?: string;
+    color?: string;
+};
+type InvestmentUpdates = {
+    name?: string;
+    type?: Investment['type'];
+    broker?: string;
+    invested_amount?: number;
+    current_value?: number;
+    monthly_yield?: number;
+    annual_yield?: number;
+    quantity?: number;
+    unit_price?: number;
+    purchase_date?: string;
+    liquidity?: Investment['liquidity'];
+    risk?: Investment['risk'];
+    notes?: string;
     color?: string;
 };
 
@@ -84,6 +100,19 @@ const mapBudget = (sql: SqlRow): Budget => ({
     spent: Number(sql.spent || 0),
     categoryId: String(sql.category_id || ''),
     createdAt: String(sql.created_at || '')
+});
+
+const mapInvestment = (sql: SqlRow): Investment => ({
+    ...(sql as unknown as Investment),
+    investedAmount: Number(sql.invested_amount ?? sql.investedAmount ?? 0),
+    currentValue: Number(sql.current_value ?? sql.currentValue ?? 0),
+    monthlyYield: Number(sql.monthly_yield ?? sql.monthlyYield ?? 0),
+    annualYield: Number(sql.annual_yield ?? sql.annualYield ?? 0),
+    quantity: sql.quantity === null || sql.quantity === undefined ? undefined : Number(sql.quantity),
+    unitPrice: sql.unit_price === null || sql.unit_price === undefined ? undefined : Number(sql.unit_price),
+    purchaseDate: String(sql.purchase_date || sql.purchaseDate || ''),
+    createdAt: String(sql.created_at || ''),
+    updatedAt: String(sql.updated_at || '')
 });
 
 // =====================================================
@@ -607,6 +636,118 @@ export function useGoals() {
 // =====================================================
 // useFinancialSummary — Computed KPIs (Remains In-Memory)
 // =====================================================
+
+// =====================================================
+// useInvestments - CRUD for investments (Supabase)
+// =====================================================
+
+export function useInvestments() {
+    const [investments, setInvestments] = useState<Investment[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchInvestments = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('investments')
+            .select('*')
+            .order('purchase_date', { ascending: false });
+
+        if (error) console.error('Error fetching investments:', error);
+        if (data) setInvestments(data.map(mapInvestment));
+        setLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchInvestments();
+    }, [fetchInvestments]);
+
+    const addInvestment = useCallback(async (investment: Omit<Investment, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const sqlBody = {
+            user_id: user.id,
+            name: investment.name,
+            type: investment.type,
+            broker: investment.broker,
+            invested_amount: investment.investedAmount,
+            current_value: investment.currentValue,
+            monthly_yield: investment.monthlyYield,
+            annual_yield: investment.annualYield,
+            quantity: investment.quantity,
+            unit_price: investment.unitPrice,
+            purchase_date: investment.purchaseDate,
+            liquidity: investment.liquidity,
+            risk: investment.risk,
+            notes: investment.notes,
+            color: investment.color
+        };
+
+        const { data, error } = await supabase
+            .from('investments')
+            .insert([sqlBody])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding investment:', error);
+            return null;
+        }
+
+        const mapped = mapInvestment(data);
+        setInvestments(prev => [mapped, ...prev]);
+        return mapped;
+    }, []);
+
+    const updateInvestment = useCallback(async (id: string, updates: Partial<Investment>) => {
+        const sqlUpdates: InvestmentUpdates = {};
+        if (updates.name !== undefined) sqlUpdates.name = updates.name;
+        if (updates.type !== undefined) sqlUpdates.type = updates.type;
+        if (updates.broker !== undefined) sqlUpdates.broker = updates.broker;
+        if (updates.investedAmount !== undefined) sqlUpdates.invested_amount = updates.investedAmount;
+        if (updates.currentValue !== undefined) sqlUpdates.current_value = updates.currentValue;
+        if (updates.monthlyYield !== undefined) sqlUpdates.monthly_yield = updates.monthlyYield;
+        if (updates.annualYield !== undefined) sqlUpdates.annual_yield = updates.annualYield;
+        if (updates.quantity !== undefined) sqlUpdates.quantity = updates.quantity;
+        if (updates.unitPrice !== undefined) sqlUpdates.unit_price = updates.unitPrice;
+        if (updates.purchaseDate !== undefined) sqlUpdates.purchase_date = updates.purchaseDate;
+        if (updates.liquidity !== undefined) sqlUpdates.liquidity = updates.liquidity;
+        if (updates.risk !== undefined) sqlUpdates.risk = updates.risk;
+        if (updates.notes !== undefined) sqlUpdates.notes = updates.notes;
+        if (updates.color !== undefined) sqlUpdates.color = updates.color;
+
+        const { data, error } = await supabase
+            .from('investments')
+            .update(sqlUpdates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating investment:', error);
+            return null;
+        }
+
+        const mapped = mapInvestment(data);
+        setInvestments(prev => prev.map(i => i.id === id ? mapped : i));
+        return mapped;
+    }, []);
+
+    const deleteInvestment = useCallback(async (id: string) => {
+        const { error } = await supabase
+            .from('investments')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting investment:', error);
+            return false;
+        }
+        setInvestments(prev => prev.filter(i => i.id !== id));
+        return true;
+    }, []);
+
+    return { investments, loading, addInvestment, updateInvestment, deleteInvestment };
+}
 
 export function useFinancialSummary(transactions: Transaction[], month?: number, year?: number) {
     return useMemo(() => {

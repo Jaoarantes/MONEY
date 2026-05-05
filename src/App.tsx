@@ -8,12 +8,13 @@ import { TransactionsPage } from './TransactionsPage';
 import { AddTransaction } from './AddTransaction';
 import { BudgetsPage } from './BudgetsPage';
 import { GoalsPage } from './GoalsPage';
+import { InvestmentsPage } from './InvestmentsPage';
 import { ReportsPage } from './ReportsPage';
 import { SettingsPage } from './SettingsPage';
 import { ToastContainer, Loader } from './components';
 import {
   useTransactions, useCategories, useBudgets,
-  useGoals, useFinancialSummary, useSettings, useToast
+  useGoals, useInvestments, useFinancialSummary, useSettings, useToast
 } from './hooks';
 import type { PageName, Transaction } from './types';
 import { cn } from './utils';
@@ -50,6 +51,7 @@ export default function App() {
   const { categories, loading: catLoading, addCategory, updateCategory, deleteCategory, seedInitialCategories } = useCategories();
   const { budgets, loading: budLoading, addBudget, updateBudget, deleteBudget } = useBudgets();
   const { goals, loading: goalLoading, addContribution, addGoal, deleteGoal, updateGoal } = useGoals();
+  const { investments, loading: invLoading, addInvestment, updateInvestment, deleteInvestment } = useInvestments();
   const { toasts, addToast, removeToast } = useToast();
 
   const summary = useFinancialSummary(transactions, selectedMonth, selectedYear);
@@ -86,6 +88,7 @@ export default function App() {
       categories,
       budgets,
       goals,
+      investments,
       settings,
       version: '2.0.0 (SQL)',
       exportDate: new Date().toISOString()
@@ -109,6 +112,7 @@ export default function App() {
       const importedTransactions = Array.isArray(parsed.transactions) ? parsed.transactions as Record<string, unknown>[] : [];
       const importedBudgets = Array.isArray(parsed.budgets) ? parsed.budgets as Record<string, unknown>[] : [];
       const importedGoals = Array.isArray(parsed.goals) ? parsed.goals as Record<string, unknown>[] : [];
+      const importedInvestments = Array.isArray(parsed.investments) ? parsed.investments as Record<string, unknown>[] : [];
 
       const categoryRows = importedCategories.map((category) => ({
         id: category.id,
@@ -154,10 +158,30 @@ export default function App() {
         color: goal.color || '#6C63FF'
       }));
 
+      const investmentRows = importedInvestments.map((investment) => ({
+        id: investment.id,
+        user_id: user.id,
+        name: investment.name,
+        type: investment.type || 'other',
+        broker: investment.broker || '',
+        invested_amount: investment.investedAmount || investment.invested_amount || 0,
+        current_value: investment.currentValue || investment.current_value || 0,
+        monthly_yield: investment.monthlyYield || investment.monthly_yield || 0,
+        annual_yield: investment.annualYield || investment.annual_yield || 0,
+        quantity: investment.quantity ?? null,
+        unit_price: investment.unitPrice || investment.unit_price || null,
+        purchase_date: investment.purchaseDate || investment.purchase_date || new Date().toISOString().slice(0, 10),
+        liquidity: investment.liquidity || 'daily',
+        risk: investment.risk || 'low',
+        notes: investment.notes || null,
+        color: investment.color || '#6C63FF'
+      }));
+
       if (categoryRows.length) await supabase.from('categories').upsert(categoryRows);
       if (transactionRows.length) await supabase.from('transactions').upsert(transactionRows);
       if (budgetRows.length) await supabase.from('budgets').upsert(budgetRows);
       if (goalRows.length) await supabase.from('goals').upsert(goalRows);
+      if (investmentRows.length) await supabase.from('investments').upsert(investmentRows);
       if (parsed.settings && typeof parsed.settings === 'object') setSettings(parsed.settings as typeof settings);
 
       addToast('success', 'Backup importado. Recarregando dados...');
@@ -186,7 +210,7 @@ export default function App() {
   };
 
   const renderPage = () => {
-    if (txLoading || catLoading || budLoading || goalLoading) {
+    if (txLoading || catLoading || budLoading || goalLoading || invLoading) {
       return <div className="flex h-[60vh] items-center justify-center"><Loader /></div>;
     }
 
@@ -277,6 +301,25 @@ export default function App() {
             onAddContribution={async (id, amount) => {
               const goal = await addContribution(id, amount);
               addToast(goal ? 'success' : 'error', goal ? 'Aporte registrado com sucesso!' : 'Não foi possível registrar o aporte.');
+            }}
+          />
+        );
+      case 'investments':
+        return (
+          <InvestmentsPage
+            investments={investments}
+            onAddInvestment={async (investment) => {
+              const created = await addInvestment(investment);
+              addToast(created ? 'success' : 'error', created ? 'Investimento cadastrado!' : 'Nao foi possivel cadastrar o investimento.');
+            }}
+            onUpdateInvestment={async (id, investment) => {
+              const updated = await updateInvestment(id, investment);
+              addToast(updated ? 'success' : 'error', updated ? 'Investimento atualizado!' : 'Nao foi possivel atualizar o investimento.');
+            }}
+            onDeleteInvestment={async (id) => {
+              if (!window.confirm('Excluir este investimento?')) return;
+              const success = await deleteInvestment(id);
+              addToast(success ? 'info' : 'error', success ? 'Investimento removido.' : 'Nao foi possivel remover o investimento.');
             }}
           />
         );

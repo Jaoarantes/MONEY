@@ -51,6 +51,27 @@ export interface Budget {
     createdAt?: string;
 }
 
+export interface Investment {
+    id: string;
+    user_id: string;
+    name: string;
+    type: 'fixed_income' | 'stock' | 'fii' | 'crypto' | 'fund' | 'international' | 'other';
+    broker: string;
+    investedAmount: number;
+    currentValue: number;
+    monthlyYield: number;
+    annualYield: number;
+    quantity?: number;
+    unitPrice?: number;
+    purchaseDate: string;
+    liquidity: 'daily' | 'short' | 'medium' | 'long' | 'locked';
+    risk: 'low' | 'medium' | 'high';
+    notes?: string;
+    color: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
 export interface AppSettings {
     currency: string;
     locale: string;
@@ -65,6 +86,7 @@ export type PageName =
     | 'add'
     | 'budgets'
     | 'goals'
+    | 'investments'
     | 'reports'
     | 'settings';
 
