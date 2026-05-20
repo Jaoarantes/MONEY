@@ -180,24 +180,36 @@ export function useSettings() {
 // useCategories — CRUD for categories (Supabase)
 // =====================================================
 
-export function useCategories() {
+export function useCategories(enabled = true) {
     const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(enabled);
 
     const fetchCategories = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('categories')
-            .select('*')
-            .order('name');
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('categories')
+                .select('*')
+                .order('name');
 
-        if (error) console.error('Error fetching categories:', error);
-        if (data) setCategories(data.map(mapCategory));
-        setLoading(false);
+            if (error) console.error('Error fetching categories:', error);
+            setCategories(data ? data.map(mapCategory) : []);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            setCategories([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
+        if (!enabled) {
+            setCategories([]);
+            setLoading(false);
+            return;
+        }
         fetchCategories();
-    }, [fetchCategories]);
+    }, [enabled, fetchCategories]);
 
     const addCategory = useCallback(async (cat: Omit<Category, 'id' | 'user_id'>) => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -308,24 +320,36 @@ export function useCategories() {
 // useTransactions — CRUD for transactions (Supabase)
 // =====================================================
 
-export function useTransactions() {
+export function useTransactions(enabled = true) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(enabled);
 
     const fetchTransactions = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('transactions')
-            .select('*')
-            .order('date', { ascending: false });
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .order('date', { ascending: false });
 
-        if (error) console.error('Error fetching transactions:', error);
-        if (data) setTransactions(data.map(mapTransaction));
-        setLoading(false);
+            if (error) console.error('Error fetching transactions:', error);
+            setTransactions(data ? data.map(mapTransaction) : []);
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+            setTransactions([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
+        if (!enabled) {
+            setTransactions([]);
+            setLoading(false);
+            return;
+        }
         fetchTransactions();
-    }, [fetchTransactions]);
+    }, [enabled, fetchTransactions]);
 
     const addTransaction = useCallback(async (tx: Omit<Transaction, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -425,23 +449,35 @@ export function useTransactions() {
 // useBudgets — CRUD for budgets (Supabase)
 // =====================================================
 
-export function useBudgets() {
+export function useBudgets(enabled = true) {
     const [budgets, setBudgets] = useState<Budget[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(enabled);
 
     const fetchBudgets = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('budgets')
-            .select('*');
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('budgets')
+                .select('*');
 
-        if (error) console.error('Error fetching budgets:', error);
-        if (data) setBudgets(data.map(mapBudget));
-        setLoading(false);
+            if (error) console.error('Error fetching budgets:', error);
+            setBudgets(data ? data.map(mapBudget) : []);
+        } catch (error) {
+            console.error('Error fetching budgets:', error);
+            setBudgets([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
+        if (!enabled) {
+            setBudgets([]);
+            setLoading(false);
+            return;
+        }
         fetchBudgets();
-    }, [fetchBudgets]);
+    }, [enabled, fetchBudgets]);
 
     const addBudget = useCallback(async (b: Omit<Budget, 'id' | 'user_id'>) => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -516,23 +552,35 @@ export function useBudgets() {
 // useGoals — CRUD for goals (Supabase)
 // =====================================================
 
-export function useGoals() {
+export function useGoals(enabled = true) {
     const [goals, setGoals] = useState<Goal[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(enabled);
 
     const fetchGoals = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('goals')
-            .select('*');
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('goals')
+                .select('*');
 
-        if (error) console.error('Error fetching goals:', error);
-        if (data) setGoals(data.map(mapGoal));
-        setLoading(false);
+            if (error) console.error('Error fetching goals:', error);
+            setGoals(data ? data.map(mapGoal) : []);
+        } catch (error) {
+            console.error('Error fetching goals:', error);
+            setGoals([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
+        if (!enabled) {
+            setGoals([]);
+            setLoading(false);
+            return;
+        }
         fetchGoals();
-    }, [fetchGoals]);
+    }, [enabled, fetchGoals]);
 
     const addGoal = useCallback(async (g: Omit<Goal, 'id' | 'user_id'>) => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -641,24 +689,36 @@ export function useGoals() {
 // useInvestments - CRUD for investments (Supabase)
 // =====================================================
 
-export function useInvestments() {
+export function useInvestments(enabled = true) {
     const [investments, setInvestments] = useState<Investment[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(enabled);
 
     const fetchInvestments = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('investments')
-            .select('*')
-            .order('purchase_date', { ascending: false });
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('investments')
+                .select('*')
+                .order('purchase_date', { ascending: false });
 
-        if (error) console.error('Error fetching investments:', error);
-        if (data) setInvestments(data.map(mapInvestment));
-        setLoading(false);
+            if (error) console.error('Error fetching investments:', error);
+            setInvestments(data ? data.map(mapInvestment) : []);
+        } catch (error) {
+            console.error('Error fetching investments:', error);
+            setInvestments([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
+        if (!enabled) {
+            setInvestments([]);
+            setLoading(false);
+            return;
+        }
         fetchInvestments();
-    }, [fetchInvestments]);
+    }, [enabled, fetchInvestments]);
 
     const addInvestment = useCallback(async (investment: Omit<Investment, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => {
         const { data: { user } } = await supabase.auth.getUser();

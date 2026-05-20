@@ -32,26 +32,52 @@ export default function App() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    let isMounted = true;
+
+    const finishAuthLoading = (nextSession: Session | null) => {
+      if (!isMounted) return;
+      setSession(nextSession);
       setAuthLoading(false);
-    });
+    };
+
+    const authTimeout = window.setTimeout(() => {
+      console.warn('Auth session check timed out.');
+      finishAuthLoading(null);
+    }, 8000);
+
+    // Check active session
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        window.clearTimeout(authTimeout);
+        if (error) console.error('Error checking auth session:', error);
+        finishAuthLoading(data.session);
+      })
+      .catch((error) => {
+        window.clearTimeout(authTimeout);
+        console.error('Error checking auth session:', error);
+        finishAuthLoading(null);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      window.clearTimeout(authTimeout);
+      finishAuthLoading(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      window.clearTimeout(authTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
+  const isAuthenticated = Boolean(session);
   const { settings, setSettings, toggleTheme } = useSettings();
-  const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
-  const { categories, loading: catLoading, addCategory, updateCategory, deleteCategory, seedInitialCategories } = useCategories();
-  const { budgets, loading: budLoading, addBudget, updateBudget, deleteBudget } = useBudgets();
-  const { goals, loading: goalLoading, addContribution, addGoal, deleteGoal, updateGoal } = useGoals();
-  const { investments, loading: invLoading, addInvestment, updateInvestment, deleteInvestment } = useInvestments();
+  const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction } = useTransactions(isAuthenticated);
+  const { categories, loading: catLoading, addCategory, updateCategory, deleteCategory, seedInitialCategories } = useCategories(isAuthenticated);
+  const { budgets, loading: budLoading, addBudget, updateBudget, deleteBudget } = useBudgets(isAuthenticated);
+  const { goals, loading: goalLoading, addContribution, addGoal, deleteGoal, updateGoal } = useGoals(isAuthenticated);
+  const { investments, loading: invLoading, addInvestment, updateInvestment, deleteInvestment } = useInvestments(isAuthenticated);
   const { toasts, addToast, removeToast } = useToast();
 
   const summary = useFinancialSummary(transactions, selectedMonth, selectedYear);
