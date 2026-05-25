@@ -21,6 +21,40 @@ interface BudgetsPageProps {
     onDeleteBudget: (id: string) => void | Promise<void>;
 }
 
+const normalizeCategoryValue = (value?: string) =>
+    value
+        ?.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
+    if (transaction.category?.name) {
+        return transaction.category;
+    }
+
+    const categoryId = transaction.categoryId?.toString();
+    const normalizedCategory = normalizeCategoryValue(categoryId);
+
+    return categories.find((category) =>
+        category.id?.toString() === categoryId ||
+        normalizeCategoryValue(category.name) === normalizedCategory
+    );
+};
+
+const transactionMatchesCategory = (transaction: Transaction, category: Category | undefined, categories: Category[]) => {
+    if (!category) return false;
+
+    const transactionCategory = resolveTransactionCategory(transaction, categories);
+    const normalizedTransactionCategory = normalizeCategoryValue(transactionCategory?.name || transaction.categoryId);
+    const normalizedBudgetCategory = normalizeCategoryValue(category.name);
+
+    return transaction.category?.id === category.id ||
+        transaction.categoryId?.toString() === category.id?.toString() ||
+        transactionCategory?.id === category.id ||
+        normalizedTransactionCategory === normalizedBudgetCategory;
+};
+
 export const BudgetsPage: React.FC<BudgetsPageProps> = ({
     budgets, categories, transactions,
     selectedMonth, selectedYear, onMonthChange, onYearChange,
@@ -127,7 +161,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                 {monthBudgets.map((budget) => {
                     const category = categories.find(c => c.id === budget.categoryId);
                     const spent = transactions
-                        .filter(t => t.categoryId === budget.categoryId && t.type === 'expense' && t.date.startsWith(selectedMonthKey))
+                        .filter(t => t.type === 'expense' && t.date.startsWith(selectedMonthKey) && transactionMatchesCategory(t, category, categories))
                         .reduce((sum, t) => sum + t.amount, 0);
                     const isOver = spent > budget.limit;
                     const isWarning = spent > budget.limit * 0.8;

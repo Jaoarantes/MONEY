@@ -73,6 +73,22 @@ const resolveTransactionCategory = (transaction: Transaction, categories: Catego
     );
 };
 
+const resolveCategoryById = (categoryId: string, categories: Category[]) =>
+    categories.find((category) => category.id?.toString() === categoryId?.toString());
+
+const transactionMatchesCategory = (transaction: Transaction, category: Category | undefined, categories: Category[]) => {
+    if (!category) return false;
+
+    const transactionCategory = resolveTransactionCategory(transaction, categories);
+    const transactionCategoryId = getTransactionCategoryId(transaction);
+    const normalizedTransactionCategory = normalizeCategoryValue(transactionCategory?.name || transaction.categoryId);
+    const normalizedBudgetCategory = normalizeCategoryValue(category.name);
+
+    return transactionCategoryId === category.id?.toString() ||
+        transactionCategory?.id === category.id ||
+        normalizedTransactionCategory === normalizedBudgetCategory;
+};
+
 const getExpenseCategoryData = (transactions: Transaction[], categories: Category[]) => {
     const grouped = new Map<string, { name: string; value: number; color: string }>();
 
@@ -129,12 +145,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Chart 5: Budget vs Spent
     const budgetData = monthBudgets.map(b => {
-        const cat = categories.find(c => c.id?.toString() === b.categoryId?.toString());
+        const cat = resolveCategoryById(b.categoryId, categories);
         const spent = transactions
-            .filter(t => {
-                const tCatId = getTransactionCategoryId(t);
-                return tCatId === b.categoryId?.toString() && t.type === 'expense';
-            })
+            .filter(t => t.type === 'expense' && transactionMatchesCategory(t, cat, categories))
             .reduce((sum, t) => sum + t.amount, 0);
         return {
             name: cat?.name || 'Outros',
