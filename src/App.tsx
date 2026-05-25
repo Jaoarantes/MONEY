@@ -399,12 +399,12 @@ export default function App() {
         onLogout={() => supabase.auth.signOut()}
       />
 
-      <main className="flex-1 min-w-0 flex flex-col pt-16 lg:pt-0">
-        <div className="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full">
+      <main className="flex-1 min-w-0 flex flex-col pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pt-0 lg:pb-0">
+        <div className="flex-1 p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto w-full">
           {renderPage()}
         </div>
 
-        <footer className="p-8 mt-12 border-t border-border/50 text-center text-text-muted text-xs no-print">
+        <footer className="hidden lg:block p-8 mt-12 border-t border-border/50 text-center text-text-muted text-xs no-print">
           <p>© 2026 Money — Finanças pessoais com clareza.</p>
         </footer>
       </main>

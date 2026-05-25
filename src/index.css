@@ -49,6 +49,25 @@
     overflow-x: hidden;
   }
 
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  img,
+  svg,
+  canvas {
+    max-width: 100%;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -312,6 +331,59 @@
 
 .theme-light .month-picker {
   background: rgba(255, 255, 255, 0.7);
+}
+
+/* ==================== MOBILE POLISH ==================== */
+
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+
+  .glass,
+  .glass-strong,
+  .glass-card {
+    border-radius: 10px;
+  }
+
+  .balance-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .balance-strip>div {
+    min-width: max-content;
+    justify-content: flex-start;
+    padding-bottom: 2px;
+  }
+
+  .insight-panel {
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .month-picker {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .month-picker-label {
+    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 0.86rem;
+  }
+
+  .month-picker-btn {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .recharts-wrapper,
+  .recharts-surface {
+    max-width: 100%;
+  }
 }
 
 /* ==================== PRINT ==================== */

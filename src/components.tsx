@@ -43,7 +43,7 @@ export const KPICard: React.FC<KPICardProps> = ({ title, value, variation, icon,
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-6 flex flex-col gap-4 relative overflow-hidden group"
+            className="glass-card p-4 sm:p-6 flex flex-col gap-4 relative overflow-hidden group"
         >
             <div className="flex justify-between items-start">
                 <div className={`p-3 rounded-xl ${bgGlowMap[color]} ${colorMap[color]}`}>
@@ -96,12 +96,12 @@ interface ChartCardProps {
 }
 
 export const ChartCard: React.FC<ChartCardProps> = ({ title, subtitle, children, className }) => (
-    <div className={cn("glass-card p-6 flex flex-col gap-6", className)}>
+    <div className={cn("glass-card p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 min-w-0", className)}>
         <div>
-            <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-text-primary leading-tight">{title}</h3>
             {subtitle && <p className="text-sm text-text-secondary">{subtitle}</p>}
         </div>
-        <div className="flex-1 w-full min-h-[300px]">
+        <div className="flex-1 w-full min-h-[260px] sm:min-h-[300px] min-w-0">
             {children}
         </div>
     </div>
@@ -163,7 +163,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '24px',
+                padding: '16px',
                 overflowY: 'auto',
             }}
         >
@@ -188,8 +188,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
                     position: 'relative',
                     width: '100%',
                     maxWidth: '520px',
+                    maxHeight: 'calc(100vh - 32px)',
                     backgroundColor: 'var(--color-bg-surface)',
-                    borderRadius: '24px',
+                    borderRadius: '16px',
                     border: '1px solid var(--color-border-light)',
                     boxShadow: '0 32px 64px rgba(0, 0, 0, 0.3)',
                     overflow: 'hidden',
@@ -201,7 +202,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '24px 28px',
+                        padding: '18px 20px',
                         borderBottom: '1px solid var(--color-border)',
                     }}
                 >
@@ -225,7 +226,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
                 </div>
 
                 {/* Body */}
-                <div style={{ padding: '28px', maxHeight: '70vh', overflowY: 'auto' }}>
+                <div style={{ padding: '20px', maxHeight: 'calc(100vh - 132px)', overflowY: 'auto' }}>
                     {children}
                 </div>
             </div>
@@ -249,7 +250,7 @@ export const CategoryBadge: React.FC<{ name: string; color: string }> = ({ name,
 
 // ==================== TOAST ====================
 export const ToastContainer: React.FC<{ toasts: ToastMessage[], onRemove: (id: string) => void }> = ({ toasts, onRemove }) => (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
+    <div className="fixed left-4 right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] sm:left-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3">
         <AnimatePresence>
             {toasts.map((toast) => (
                 <motion.div
@@ -258,7 +259,7 @@ export const ToastContainer: React.FC<{ toasts: ToastMessage[], onRemove: (id: s
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 100 }}
                     className={cn(
-                        "glass-strong p-4 rounded-xl shadow-xl border-l-4 flex items-center gap-3 min-w-[300px]",
+                        "glass-strong p-4 rounded-xl shadow-xl border-l-4 flex items-center gap-3 w-full sm:min-w-[300px] sm:w-auto",
                         toast.type === 'success' ? "border-positive" :
                             toast.type === 'warning' ? "border-warning" :
                                 toast.type === 'info' ? "border-accent" : "border-negative"

@@ -107,7 +107,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
         <div className="space-y-8 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-text-primary">Orçamentos</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">Orçamentos</h1>
                     <p className="text-text-secondary">Defina limites mensais para cada categoria de gasto.</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -157,7 +157,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 {monthBudgets.map((budget) => {
                     const category = categories.find(c => c.id === budget.categoryId);
                     const spent = transactions
@@ -167,7 +167,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                     const isWarning = spent > budget.limit * 0.8;
 
                     return (
-                        <div key={budget.id} className="glass-card p-6 flex flex-col gap-6 group relative overflow-hidden h-full hover:border-accent/40 hover:translate-y-[-4px] transition-all duration-300">
+                        <div key={budget.id} className="glass-card p-4 sm:p-6 flex flex-col gap-5 sm:gap-6 group relative overflow-hidden h-full hover:border-accent/40 hover:translate-y-[-4px] transition-all duration-300">
                             <div className="flex justify-between items-start z-10">
                                 <div className="flex items-center gap-4">
                                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-text-on-accent shadow-lg shadow-accent/20" style={{ backgroundColor: category?.color || 'var(--color-accent)' }}>
@@ -192,7 +192,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                                 <div className="flex justify-between items-end">
                                     <div className="space-y-1">
                                         <p className="text-sm text-text-muted uppercase tracking-wider font-semibold">Consumido</p>
-                                        <p className="text-3xl font-bold font-numbers text-text-primary">{formatCurrency(spent)}</p>
+                                        <p className="text-2xl sm:text-3xl font-bold font-numbers text-text-primary">{formatCurrency(spent)}</p>
                                     </div>
                                     <div className="text-right space-y-1">
                                         <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Teto</p>
@@ -235,7 +235,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({
                     );
                 })}
                 {monthBudgets.length === 0 && (
-                    <div className="md:col-span-2 xl:col-span-3 glass p-12 text-center text-text-muted">
+                    <div className="md:col-span-2 xl:col-span-3 glass p-8 sm:p-12 text-center text-text-muted">
                         Nenhum orçamento definido. Clique em "Novo Orçamento" para começar a planejar seus gastos.
                     </div>
                 )}

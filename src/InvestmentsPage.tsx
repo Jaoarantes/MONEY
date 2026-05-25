@@ -71,7 +71,7 @@ const KpiTile = ({
     icon: React.ReactNode;
     tone: 'accent' | 'positive' | 'negative' | 'warning';
 }) => (
-    <div className="glass-card p-6 flex items-start justify-between gap-4 min-h-[150px]">
+    <div className="glass-card p-4 sm:p-6 flex items-start justify-between gap-4 min-h-[132px] sm:min-h-[150px]">
         <div className="space-y-3">
             <p className="text-xs font-bold text-text-muted uppercase tracking-widest">{title}</p>
             <h3 className={cn(
@@ -208,7 +208,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
         <div className="space-y-8 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-text-primary">Investimentos</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">Investimentos</h1>
                     <p className="text-text-secondary">Acompanhe patrimônio, rentabilidade, risco e onde seu dinheiro está aplicado.</p>
                 </div>
                 <button
@@ -220,7 +220,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
                 <KpiTile title="Patrimônio Investido" value={formatCurrency(metrics.current)} detail={`${formatCurrency(metrics.invested)} aplicados`} icon={<WalletCards size={24} />} tone="accent" />
                 <KpiTile title="Resultado Total" value={formatCurrency(metrics.profit)} detail={`${roi.toFixed(2)}% sobre o investido`} icon={metrics.profit >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />} tone={metrics.profit >= 0 ? 'positive' : 'negative'} />
                 <KpiTile title="Renda Mensal Estimada" value={formatCurrency(metrics.monthlyIncome)} detail={`${metrics.weightedAnnual.toFixed(2)}% a.a. ponderado`} icon={<Landmark size={24} />} tone="positive" />
@@ -257,7 +257,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-8">
                 <ChartCard title="Alocação por Classe" subtitle="Distribuição pelo valor atual" className="xl:col-span-5">
                     <ResponsiveContainer width="100%" height={320}>
                         <PieChart>
@@ -284,7 +284,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
                 </ChartCard>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-8">
                 <ChartCard title="Por Corretora" subtitle="Concentração por instituição" className="xl:col-span-1">
                     <div className="space-y-5">
                         {metrics.allocationByBroker.map((broker) => (
@@ -296,7 +296,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
                                 <ProgressBar value={broker.value} max={metrics.current} color="var(--color-accent)" showPercent />
                             </div>
                         ))}
-                        {metrics.allocationByBroker.length === 0 && <p className="text-center text-text-muted p-8">Cadastre seus investimentos para ver a concentração.</p>}
+                        {metrics.allocationByBroker.length === 0 && <p className="text-center text-text-muted p-6 sm:p-8">Cadastre seus investimentos para ver a concentração.</p>}
                     </div>
                 </ChartCard>
 
@@ -366,7 +366,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
                         </table>
                     </div>
                     {investments.length === 0 && (
-                        <div className="p-12 text-center text-text-muted">Nenhum investimento cadastrado. Clique em "Novo Investimento" para montar sua carteira.</div>
+                        <div className="p-8 sm:p-12 text-center text-text-muted">Nenhum investimento cadastrado. Clique em "Novo Investimento" para montar sua carteira.</div>
                     )}
                 </div>
             </div>

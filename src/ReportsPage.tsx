@@ -97,7 +97,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
         <div className="space-y-8 animate-fade-in-up no-print">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-text-primary">Relatórios</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">Relatórios</h1>
                     <p className="text-text-secondary">Análise profunda da seu desempenho financeiro anual.</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -124,15 +124,15 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="glass p-6 border-b-4 border-positive">
                     <p className="text-text-muted text-xs font-bold uppercase tracking-widest mb-1">Total Recebido</p>
-                    <h3 className="text-3xl font-bold font-numbers text-positive">{formatCurrency(totalIncome)}</h3>
+                    <h3 className="text-2xl sm:text-3xl font-bold font-numbers text-positive">{formatCurrency(totalIncome)}</h3>
                 </div>
                 <div className="glass p-6 border-b-4 border-negative">
                     <p className="text-text-muted text-xs font-bold uppercase tracking-widest mb-1">Total Gasto</p>
-                    <h3 className="text-3xl font-bold font-numbers text-negative">{formatCurrency(totalExpense)}</h3>
+                    <h3 className="text-2xl sm:text-3xl font-bold font-numbers text-negative">{formatCurrency(totalExpense)}</h3>
                 </div>
                 <div className="glass p-6 border-b-4 border-accent">
                     <p className="text-text-muted text-xs font-bold uppercase tracking-widest mb-1">Economia Líquida</p>
-                    <h3 className="text-3xl font-bold font-numbers text-accent">{formatCurrency(totalSavings)}</h3>
+                    <h3 className="text-2xl sm:text-3xl font-bold font-numbers text-accent">{formatCurrency(totalSavings)}</h3>
                 </div>
             </div>
 
@@ -158,7 +158,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                 </ResponsiveContainer>
             </ChartCard>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 <ChartCard title={`Gastos por Categoria (${selectedYear})`}>
                     <ResponsiveContainer width="100%" height={350}>
                         <PieChart>

@@ -43,7 +43,7 @@ export const AuthPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-bg-primary flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -57,12 +57,12 @@ export const AuthPage: React.FC = () => {
                     >
                         M
                     </motion.div>
-                    <h1 className="text-4xl font-bold tracking-tight text-white mb-2">MONEY</h1>
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">MONEY</h1>
                     <p className="text-text-secondary">Finanças pessoais com clareza</p>
                 </div>
 
                 {/* Auth Card */}
-                <div className="glass-strong p-8 rounded-[32px] border border-white/10 shadow-2xl">
+                <div className="glass-strong p-5 sm:p-8 rounded-2xl sm:rounded-[32px] border border-white/10 shadow-2xl">
                     <div className="flex bg-white/5 p-1 rounded-2xl mb-8">
                         <button
                             onClick={() => setIsSignUp(false)}

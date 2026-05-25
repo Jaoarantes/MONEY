@@ -28,6 +28,14 @@ const MENU_ITEMS = [
     { id: 'settings', label: 'Ajustes', icon: Settings },
 ] as const;
 
+const MOBILE_NAV_ITEMS = [
+    { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
+    { id: 'transactions', label: 'Movimentos', icon: Receipt },
+    { id: 'add', label: 'Novo', icon: PlusCircle },
+    { id: 'budgets', label: 'Limites', icon: PieChart },
+    { id: 'settings', label: 'Ajustes', icon: Settings },
+] as const;
+
 export const Sidebar: React.FC<SidebarProps> = ({
     currentPage, onPageChange, settings, userEmail, onToggleTheme, onLogout
 }) => {
@@ -39,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
         <>
             {/* Mobile Header */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 h-16 glass-strong z-40 px-6 flex items-center justify-between">
+            <div className="lg:hidden fixed top-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-top))] glass-strong z-40 px-4 pt-[env(safe-area-inset-top)] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-text-on-accent font-bold">M</div>
                     <span className="font-bold tracking-tight text-text-primary">MONEY</span>
@@ -126,6 +134,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 )}
             </AnimatePresence>
+
+            <nav className="lg:hidden fixed left-0 right-0 bottom-0 z-40 border-t border-border bg-bg-surface/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
+                <div className="grid grid-cols-5 px-1 py-2">
+                    {MOBILE_NAV_ITEMS.map((item) => {
+                        const isActive = currentPage === item.id;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => onPageChange(item.id as PageName)}
+                                className={cn(
+                                    "h-14 min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all",
+                                    isActive ? "text-accent bg-accent/10" : "text-text-muted active:bg-bg-surface-soft"
+                                )}
+                                aria-label={item.label}
+                            >
+                                <item.icon size={20} />
+                                <span className="w-full truncate px-1">{item.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </nav>
 
             {/* Desktop Sidebar */}
             <motion.aside

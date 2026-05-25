@@ -89,14 +89,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     };
 
     return (
-        <div className="max-w-5xl space-y-8 animate-fade-in-up pb-20">
+        <div className="max-w-5xl space-y-6 sm:space-y-8 animate-fade-in-up pb-20">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary">Configurações do App</h1>
                     <p className="text-text-secondary">Personalize sua experiência, gerencie dados e estáticas.</p>
                 </div>
 
-                <div className="flex bg-white/5 p-1 rounded-2xl border border-border">
+                <div className="flex max-w-full overflow-x-auto bg-white/5 p-1 rounded-2xl border border-border">
                     {[
                         { id: 'general', label: 'Geral', icon: SettingsIcon },
                         { id: 'categories', label: 'Categorias', icon: Tag },
@@ -107,7 +107,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as typeof activeTab)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
+                                "flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold transition-all shrink-0",
                                 activeTab === tab.id ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-text-muted hover:text-text-secondary"
                             )}
                         >
@@ -119,13 +119,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
 
             {activeTab === 'general' && (
-                <div className="glass-card p-8 space-y-8">
+                <div className="glass-card p-4 sm:p-8 space-y-6 sm:space-y-8">
                     <div className="flex items-center gap-3 border-b border-border pb-4">
                         <SettingsIcon size={24} className="text-accent" />
                         <h2 className="text-xl font-bold">Preferências do Sistema</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
                         <div className="space-y-4">
                             <label className="text-sm font-bold text-text-muted uppercase tracking-widest">Início do Ciclo Financeiro</label>
                             <div className="flex items-center gap-4 bg-bg-input p-4 rounded-2xl border border-border">

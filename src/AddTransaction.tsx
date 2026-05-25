@@ -87,7 +87,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     return (
         <div className="max-w-2xl mx-auto animate-fade-in-up">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-text-primary">
+                <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
                     {initialData ? 'Editar Lançamento' : 'Novo Lançamento'}
                 </h1>
                 <p className="text-text-secondary">Preencha os dados abaixo para registrar sua movimentação.</p>
@@ -129,7 +129,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                     <label className="block text-xs font-bold text-text-muted uppercase mb-2 tracking-widest">Valor</label>
                     <div className="flex items-baseline gap-2">
                         <span className={cn(
-                            "text-3xl font-bold font-numbers",
+                            "text-2xl sm:text-3xl font-bold font-numbers",
                             type === 'income' ? 'text-positive' : 'text-negative'
                         )}>R$</span>
                         <input
@@ -137,7 +137,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             value={amount}
                             onChange={handleAmountChange}
                             className={cn(
-                                "w-full bg-transparent text-5xl font-bold font-numbers focus:outline-none",
+                                "w-full bg-transparent text-4xl sm:text-5xl font-bold font-numbers focus:outline-none min-w-0",
                                 type === 'income' ? 'text-positive' : 'text-negative'
                             )}
                             placeholder="0,00"
@@ -251,7 +251,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             >
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-text-muted uppercase">Frequência</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((f) => (
                                             <button
                                                 key={f}

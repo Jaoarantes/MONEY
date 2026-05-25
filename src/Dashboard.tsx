@@ -180,7 +180,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Header with Month Picker */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-text-primary tracking-tight">Visão Geral</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">Visão Geral</h1>
                     <p className="text-text-secondary">Bem-vindo de volta! Aqui está o resumo das suas finanças.</p>
                 </div>
                 <div className="month-picker">
@@ -290,7 +290,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
                 <KPICard
                     title="Saldo do Mês"
                     value={summary.previousBalance + summary.savings}
@@ -326,7 +326,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Primary Charts Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-8">
                 {/* Chart 1: Fluxo de Caixa */}
                 <ChartCard
                     title="Fluxo de Caixa"
@@ -384,7 +384,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Secondary Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 <ChartCard title="Receitas vs Despesas (6 meses)" subtitle="Comparativo de entradas e saídas">
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={cashFlowData}>
@@ -444,7 +444,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </ChartCard>
 
             {/* Ranking & Goals */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-8">
                 <ChartCard title="Maiores Gastos" subtitle="As 8 transações mais altas do período">
                     <div className="space-y-4">
                         {topExpenses.map((expense, index) => (

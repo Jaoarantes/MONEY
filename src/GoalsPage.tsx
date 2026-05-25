@@ -85,7 +85,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
         <div className="space-y-8 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-text-primary">Metas</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">Metas</h1>
                     <p className="text-text-secondary">Transforme seus sonhos em realidade com planejamento.</p>
                 </div>
                 <button
@@ -97,7 +97,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {goals.map((goal) => {
                     const percent = Math.min(100, (goal.currentAmount / goal.targetAmount) * 100);
                     const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
@@ -106,21 +106,21 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
 
                     return (
                         <div key={goal.id} className="glass-card group relative overflow-hidden flex flex-col">
-                            <div className="p-8 space-y-8 flex-1">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-5">
+                            <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 flex-1">
+                                <div className="flex justify-between items-start gap-3">
+                                    <div className="flex items-center gap-3 sm:gap-5 min-w-0">
                                         <div
-                                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-2xl relative transition-transform group-hover:scale-110 duration-500"
+                                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-white shadow-2xl relative transition-transform group-hover:scale-110 duration-500 shrink-0"
                                             style={{
                                                 background: `linear-gradient(135deg, ${goal.color}, ${goal.color}dd)`,
                                                 boxShadow: `0 12px 24px ${goal.color}30`
                                             }}
                                         >
-                                            <Target size={32} />
+                                            <Target size={28} />
                                             <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </div>
-                                        <div>
-                                            <h2 className="text-2xl font-bold text-text-primary tracking-tight leading-none mb-2">{goal.name}</h2>
+                                        <div className="min-w-0">
+                                            <h2 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight leading-tight mb-2 truncate">{goal.name}</h2>
                                             <div className="flex items-center gap-3">
                                                 <span className="text-xs font-bold text-text-muted flex items-center gap-1.5 uppercase tracking-wider">
                                                     <Calendar size={12} className="text-accent" />
@@ -129,7 +129,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => { setEditingGoal(goal); setName(goal.name); setTargetAmount(new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(goal.targetAmount)); setCurrentAmount(new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(goal.currentAmount)); setDeadline(goal.deadline); setColor(goal.color); setIsModalOpen(true); }}
                                             className="p-2.5 hover:bg-white/10 rounded-xl text-text-muted hover:text-text-primary transition-all"
@@ -149,7 +149,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                                     <div className="flex justify-between items-end">
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">Acumulado</p>
-                                            <p className="text-4xl font-bold font-numbers tracking-tight text-text-primary">
+                                            <p className="text-2xl sm:text-4xl font-bold font-numbers tracking-tight text-text-primary">
                                                 {formatCurrency(goal.currentAmount)}
                                             </p>
                                         </div>
@@ -169,19 +169,19 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-8 py-6 border-y border-white/5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 py-5 sm:py-6 border-y border-white/5">
                                     <div>
                                         <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-1.5 opacity-60">Faltam</p>
                                         <p className="text-lg font-bold font-numbers text-text-primary">{formatCurrency(remaining)}</p>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="sm:text-right">
                                         <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-1.5 opacity-60">Esforço Mensal</p>
                                         <p className="text-lg font-bold font-numbers text-accent">{formatCurrency(monthlyRequired)}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-white/2 flex items-center justify-between border-t border-white/5">
+                            <div className="p-4 sm:p-6 bg-white/2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/5">
                                 <div className={cn(
                                     "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter flex items-center gap-2",
                                     percent >= 100 ? "bg-positive/20 text-positive ring-1 ring-positive/30" : "bg-accent/10 text-accent ring-1 ring-accent/30"
@@ -191,7 +191,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                                 </div>
                                 <button
                                     onClick={() => { setSelectedGoal(goal); setIsContributionModalOpen(true); }}
-                                    className="bg-accent text-text-on-accent px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-accent/20"
+                                    className="w-full sm:w-auto bg-accent text-text-on-accent px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-accent/20"
                                 >
                                     Fazer Aporte
                                 </button>

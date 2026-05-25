@@ -112,7 +112,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-text-primary">Transações</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">Transações</h1>
                     <p className="text-text-secondary">Histórico detalhado de toda sua atividade financeira.</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -164,7 +164,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             </div>
 
             {/* Filters Bar */}
-            <div className="glass p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="glass p-3 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
                 <div className="md:col-span-4 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
                     <input
