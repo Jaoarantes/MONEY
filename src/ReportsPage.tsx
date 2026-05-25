@@ -15,8 +15,6 @@ interface ReportsPageProps {
     categories: Category[];
 }
 
-const FALLBACK_CATEGORY_COLOR = '#8888A0';
-
 const normalizeCategoryValue = (value?: string) =>
     value
         ?.normalize('NFD')
@@ -25,12 +23,8 @@ const normalizeCategoryValue = (value?: string) =>
         .toLowerCase();
 
 const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
-    if (transaction.category?.name) {
-        return transaction.category;
-    }
-
-    const categoryId = transaction.categoryId?.toString();
-    const normalizedCategory = normalizeCategoryValue(categoryId);
+    const categoryId = transaction.category?.id || transaction.categoryId?.toString();
+    const normalizedCategory = normalizeCategoryValue(transaction.category?.name || transaction.categoryId);
 
     return categories.find((category) =>
         category.id?.toString() === categoryId ||
@@ -45,14 +39,15 @@ const getExpenseCategoryData = (transactions: Transaction[], categories: Categor
         .filter((transaction) => transaction.type === 'expense')
         .forEach((transaction) => {
             const category = resolveTransactionCategory(transaction, categories);
-            const name = category?.name || transaction.categoryId || 'Outros';
-            const key = category?.id || normalizeCategoryValue(name) || 'outros';
+            if (!category) return;
+
+            const key = category.id;
             const current = grouped.get(key);
 
             grouped.set(key, {
-                name,
+                name: category.name,
                 value: (current?.value || 0) + transaction.amount,
-                color: category?.color || current?.color || FALLBACK_CATEGORY_COLOR
+                color: category.color
             });
         });
 
