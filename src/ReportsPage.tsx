@@ -5,6 +5,7 @@ import {
     Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
     AreaChart, Area, Legend
 } from 'recharts';
+import { parseISO } from 'date-fns';
 import { formatCurrency } from './utils';
 import { ChartCard } from './components';
 import type { Transaction, Category } from './types';
@@ -58,19 +59,29 @@ const getExpenseCategoryData = (transactions: Transaction[], categories: Categor
     return Array.from(grouped.values()).sort((a, b) => b.value - a.value);
 };
 
+const getTransactionDate = (transaction: Transaction) => parseISO(transaction.date);
+
+const currencyTooltipFormatter = (value: unknown) => {
+    const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
+    return formatCurrency(Number.isFinite(numericValue) ? numericValue : 0);
+};
+
 export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categories }) => {
     const currentYear = new Date().getFullYear();
     const availableYears = Array.from(new Set([
         currentYear,
-        ...transactions.map(t => new Date(t.date).getFullYear())
+        ...transactions.map(t => getTransactionDate(t).getFullYear())
     ])).sort((a, b) => b - a);
     const [selectedYear, setSelectedYear] = useState(currentYear);
 
     const safePercent = (value: number, total: number) => total > 0 ? (value / total) * 100 : 0;
+    const selectedYearTransactions = transactions.filter((transaction) =>
+        getTransactionDate(transaction).getFullYear() === selectedYear
+    );
 
     // Processing data for the report
     const reportData = Array.from({ length: 12 }, (_, i) => i).map(m => {
-        const monthTx = transactions.filter(t => new Date(t.date).getMonth() === m && new Date(t.date).getFullYear() === selectedYear);
+        const monthTx = selectedYearTransactions.filter(t => getTransactionDate(t).getMonth() === m);
         const income = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
         const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
         return {
@@ -81,10 +92,10 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
         };
     });
 
-    const categorySpending = getExpenseCategoryData(transactions, categories);
+    const categorySpending = getExpenseCategoryData(selectedYearTransactions, categories);
 
-    const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const totalIncome = selectedYearTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const totalExpense = selectedYearTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     const totalSavings = totalIncome - totalExpense;
 
     return (
@@ -142,7 +153,10 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
-                        <Tooltip contentStyle={{ backgroundColor: '#111118', border: '1px solid #222233', borderRadius: '12px' }} />
+                        <Tooltip
+                            formatter={currencyTooltipFormatter}
+                            contentStyle={{ backgroundColor: '#111118', border: '1px solid #222233', borderRadius: '12px' }}
+                        />
                         <Area type="monotone" name="Receitas" dataKey="receita" stroke="var(--color-positive)" fill="url(#rIncome)" strokeWidth={3} />
                         <Area type="monotone" name="Despesas" dataKey="despesa" stroke="var(--color-negative)" fill="transparent" strokeWidth={3} strokeDasharray="5 5" />
                     </AreaChart>
@@ -150,7 +164,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
             </ChartCard>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <ChartCard title="Gastos por Categoria (Histórico Total)">
+                <ChartCard title={`Gastos por Categoria (${selectedYear})`}>
                     <ResponsiveContainer width="100%" height={350}>
                         <PieChart>
                             <Pie
@@ -165,7 +179,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
-                            <Tooltip />
+                            <Tooltip formatter={currencyTooltipFormatter} />
                             <Legend verticalAlign="bottom" height={36} iconType="circle" />
                         </PieChart>
                     </ResponsiveContainer>
@@ -206,7 +220,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
                     <h2 className="text-lg font-bold">Resumo Fiscal</h2>
                 </div>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                    Seu balanão geral acumulado é de <b className="text-text-primary">{formatCurrency(totalSavings)}</b>.
+                    Seu saldo de {selectedYear} é de <b className="text-text-primary">{formatCurrency(totalSavings)}</b>.
                     Sua maior fonte de despesa é <b>{categorySpending[0]?.name || 'nenhuma categoria'}</b>, representando {safePercent(categorySpending[0]?.value || 0, totalExpense).toFixed(1)}% dos seus gastos totais.
                     Recomendamos revisar orçamentos se a taxa de poupança estiver abaixo de 20%.
                 </p>
