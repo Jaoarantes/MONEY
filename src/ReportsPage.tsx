@@ -14,6 +14,50 @@ interface ReportsPageProps {
     categories: Category[];
 }
 
+const FALLBACK_CATEGORY_COLOR = '#8888A0';
+
+const normalizeCategoryValue = (value?: string) =>
+    value
+        ?.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
+    if (transaction.category?.name) {
+        return transaction.category;
+    }
+
+    const categoryId = transaction.categoryId?.toString();
+    const normalizedCategory = normalizeCategoryValue(categoryId);
+
+    return categories.find((category) =>
+        category.id?.toString() === categoryId ||
+        normalizeCategoryValue(category.name) === normalizedCategory
+    );
+};
+
+const getExpenseCategoryData = (transactions: Transaction[], categories: Category[]) => {
+    const grouped = new Map<string, { name: string; value: number; color: string }>();
+
+    transactions
+        .filter((transaction) => transaction.type === 'expense')
+        .forEach((transaction) => {
+            const category = resolveTransactionCategory(transaction, categories);
+            const name = category?.name || transaction.categoryId || 'Outros';
+            const key = category?.id || normalizeCategoryValue(name) || 'outros';
+            const current = grouped.get(key);
+
+            grouped.set(key, {
+                name,
+                value: (current?.value || 0) + transaction.amount,
+                color: category?.color || current?.color || FALLBACK_CATEGORY_COLOR
+            });
+        });
+
+    return Array.from(grouped.values()).sort((a, b) => b.value - a.value);
+};
+
 export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categories }) => {
     const currentYear = new Date().getFullYear();
     const availableYears = Array.from(new Set([
@@ -22,7 +66,6 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
     ])).sort((a, b) => b - a);
     const [selectedYear, setSelectedYear] = useState(currentYear);
 
-    const getTransactionCategoryId = (transaction: Transaction) => transaction.categoryId?.toString();
     const safePercent = (value: number, total: number) => total > 0 ? (value / total) * 100 : 0;
 
     // Processing data for the report
@@ -38,17 +81,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, categori
         };
     });
 
-    const categorySpending = categories
-        .map(c => ({
-            name: c.name,
-            value: transactions.filter(t => {
-                const tCatId = getTransactionCategoryId(t);
-                return tCatId === c.id?.toString() && t.type === 'expense';
-            }).reduce((s, t) => s + t.amount, 0),
-            color: c.color
-        }))
-        .filter(c => c.value > 0)
-        .sort((a, b) => b.value - a.value);
+    const categorySpending = getExpenseCategoryData(transactions, categories);
 
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);

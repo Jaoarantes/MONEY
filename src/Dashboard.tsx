@@ -48,7 +48,51 @@ type TooltipPayload = {
     value?: number;
 };
 
-const getTransactionCategoryId = (transaction: Transaction) => transaction.categoryId?.toString();
+const FALLBACK_CATEGORY_COLOR = '#8888A0';
+
+const normalizeCategoryValue = (value?: string) =>
+    value
+        ?.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+const getTransactionCategoryId = (transaction: Transaction) => transaction.category?.id || transaction.categoryId?.toString();
+
+const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
+    if (transaction.category?.name) {
+        return transaction.category;
+    }
+
+    const categoryId = transaction.categoryId?.toString();
+    const normalizedCategory = normalizeCategoryValue(categoryId);
+
+    return categories.find((category) =>
+        category.id?.toString() === categoryId ||
+        normalizeCategoryValue(category.name) === normalizedCategory
+    );
+};
+
+const getExpenseCategoryData = (transactions: Transaction[], categories: Category[]) => {
+    const grouped = new Map<string, { name: string; value: number; color: string }>();
+
+    transactions
+        .filter((transaction) => transaction.type === 'expense')
+        .forEach((transaction) => {
+            const category = resolveTransactionCategory(transaction, categories);
+            const name = category?.name || transaction.categoryId || 'Outros';
+            const key = category?.id || normalizeCategoryValue(name) || 'outros';
+            const current = grouped.get(key);
+
+            grouped.set(key, {
+                name,
+                value: (current?.value || 0) + transaction.amount,
+                color: category?.color || current?.color || FALLBACK_CATEGORY_COLOR
+            });
+        });
+
+    return Array.from(grouped.values()).sort((a, b) => b.value - a.value);
+};
 
 const safePercent = (value: number, total: number) => total > 0 ? (value / total) * 100 : 0;
 
@@ -81,18 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const monthBudgets = budgets.filter(b => b.month === selectedMonthKey);
 
     // Chart 3: Distribution by Category
-    const categoryData = categories
-        .map(cat => {
-            const spent = transactions
-                .filter(t => {
-                    const tCatId = getTransactionCategoryId(t);
-                    return tCatId === cat.id?.toString() && t.type === 'expense';
-                })
-                .reduce((sum, t) => sum + t.amount, 0);
-            return { name: cat.name, value: spent, color: cat.color };
-        })
-        .filter(d => d.value > 0)
-        .sort((a, b) => b.value - a.value);
+    const categoryData = getExpenseCategoryData(transactions, categories);
 
     // Chart 5: Budget vs Spent
     const budgetData = monthBudgets.map(b => {
@@ -120,10 +153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .map(t => ({
             name: t.description,
             amount: t.amount,
-            category: categories.find(c => {
-                const tCatId = getTransactionCategoryId(t);
-                return c.id === tCatId;
-            })?.name || 'Outros'
+            category: resolveTransactionCategory(t, categories)?.name || t.categoryId || 'Outros'
         }));
 
     // Chart 8: Goals Progress
