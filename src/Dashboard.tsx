@@ -83,31 +83,10 @@ const transactionMatchesCategory = (transaction: Transaction, category: Category
     const transactionCategoryId = getTransactionCategoryId(transaction);
     const normalizedTransactionCategory = normalizeCategoryValue(transactionCategory?.name || transaction.categoryId);
     const normalizedBudgetCategory = normalizeCategoryValue(category.name);
-    const normalizedTransactionText = normalizeCategoryValue([
-        transaction.description,
-        transaction.notes,
-        transaction.categoryId,
-        transactionCategory?.name
-    ].filter(Boolean).join(' '));
-    const budgetCategoryKeywords = getBudgetCategoryKeywords(normalizedBudgetCategory);
 
     return transactionCategoryId === category.id?.toString() ||
         transactionCategory?.id === category.id ||
-        normalizedTransactionCategory === normalizedBudgetCategory ||
-        Boolean(normalizedBudgetCategory && normalizedTransactionText?.includes(normalizedBudgetCategory)) ||
-        budgetCategoryKeywords.some((keyword) => normalizedTransactionText?.includes(keyword));
-};
-
-const getBudgetCategoryKeywords = (normalizedCategory?: string) => {
-    if (!normalizedCategory) return [];
-
-    const transportKeywords = ['transporte', 'uber', '99', 'taxi', 'carro', 'corrida', 'motorista', 'gasolina', 'combustivel'];
-
-    if (transportKeywords.some((keyword) => normalizedCategory.includes(keyword))) {
-        return transportKeywords;
-    }
-
-    return [normalizedCategory];
+        normalizedTransactionCategory === normalizedBudgetCategory;
 };
 
 const getExpenseCategoryData = (transactions: Transaction[], categories: Category[]) => {
