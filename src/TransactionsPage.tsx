@@ -12,6 +12,8 @@ import { CategoryBadge } from './components';
 import { format, parseISO } from 'date-fns';
 import type { Transaction, Category } from './types';
 
+type SortField = 'date' | 'description' | 'category' | 'paymentMethod' | 'amount';
+
 const normalizeCategoryValue = (value?: string) =>
     value
         ?.normalize('NFD')
@@ -54,7 +56,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     const [filterPayment, setFilterPayment] = useState('all');
     const [minAmount, setMinAmount] = useState('');
     const [maxAmount, setMaxAmount] = useState('');
-    const [sortField, setSortField] = useState<'date' | 'amount'>('date');
+    const [sortField, setSortField] = useState<SortField>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [page, setPage] = useState(1);
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -64,6 +66,41 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     React.useEffect(() => {
         setPage(1);
     }, [search, filterType, filterCategory, filterPayment, minAmount, maxAmount, selectedMonth, selectedYear]);
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortOrder((current) => current === 'asc' ? 'desc' : 'asc');
+            return;
+        }
+
+        setSortField(field);
+        setSortOrder(field === 'date' || field === 'amount' ? 'desc' : 'asc');
+    };
+
+    const getSortValue = (transaction: Transaction, field: SortField) => {
+        if (field === 'category') return resolveTransactionCategory(transaction, categories)?.name || '';
+        if (field === 'paymentMethod') return transaction.paymentMethod || '';
+        return transaction[field];
+    };
+
+    const renderSortHeader = (field: SortField, label: string, align: 'left' | 'right' = 'left') => {
+        const active = sortField === field;
+
+        return (
+            <button
+                type="button"
+                onClick={() => handleSort(field)}
+                className={cn(
+                    "inline-flex items-center gap-1.5 uppercase tracking-wider transition-colors hover:text-text-primary",
+                    align === 'right' && "ml-auto",
+                    active ? "text-accent" : "text-text-muted"
+                )}
+            >
+                <span>{label}</span>
+                {active && (sortOrder === 'asc' ? <ChevronUpIcon size={14} /> : <ChevronDownIcon size={14} />)}
+            </button>
+        );
+    };
 
     const filteredTransactions = useMemo(() => {
         return transactions
@@ -82,8 +119,17 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             })
             .sort((a, b) => {
                 const factor = sortOrder === 'asc' ? 1 : -1;
-                if (sortField === 'date') return (a.date.localeCompare(b.date)) * factor;
-                return (a.amount - b.amount) * factor;
+                const aValue = getSortValue(a, sortField);
+                const bValue = getSortValue(b, sortField);
+
+                if (typeof aValue === 'number' && typeof bValue === 'number') {
+                    return (aValue - bValue) * factor;
+                }
+
+                return String(aValue).localeCompare(String(bValue), 'pt-BR', {
+                    sensitivity: 'base',
+                    numeric: true
+                }) * factor;
             });
     }, [transactions, categories, search, filterType, filterCategory, filterPayment, minAmount, maxAmount, sortField, sortOrder]);
 
@@ -200,6 +246,12 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     >
                         <option value="date-desc">Data (Mais recente)</option>
                         <option value="date-asc">Data (Mais antiga)</option>
+                        <option value="description-asc">Descrição (A-Z)</option>
+                        <option value="description-desc">Descrição (Z-A)</option>
+                        <option value="category-asc">Categoria (A-Z)</option>
+                        <option value="category-desc">Categoria (Z-A)</option>
+                        <option value="paymentMethod-asc">Pagamento (A-Z)</option>
+                        <option value="paymentMethod-desc">Pagamento (Z-A)</option>
                         <option value="amount-desc">Valor (Maior)</option>
                         <option value="amount-asc">Valor (Menor)</option>
                     </select>
@@ -333,11 +385,11 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         <thead>
                             <tr className="border-b border-border bg-bg-surface-soft/40">
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider w-10"></th>
-                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Data</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Descrição</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Categoria</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Pagamento</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Valor</th>
+                                <th className="px-6 py-4 text-xs font-semibold">{renderSortHeader('date', 'Data')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold">{renderSortHeader('description', 'Descrição')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold">{renderSortHeader('category', 'Categoria')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold">{renderSortHeader('paymentMethod', 'Pagamento')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-right">{renderSortHeader('amount', 'Valor', 'right')}</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Ações</th>
                             </tr>
                         </thead>
