@@ -56,6 +56,8 @@ const DEFAULT_PAYMENT_METHODS = ['Pix', 'Cartão de Crédito', 'Cartão de Débi
 
 const TRANSACTION_SELECT = '*, category:categories!transactions_category_fkey(id, name, color)';
 const BUDGETS_CLEARED_KEY = 'money-budgets-cleared-v1';
+const OLD_EXPENSES_CLEARED_KEY = 'money-old-expenses-cleared-before-2026-05';
+const EXPENSE_HISTORY_CUTOFF = '2026-05-01';
 const MIN_VARIATION_BASE = 0.01;
 
 const isSqlRow = (value: unknown): value is SqlRow =>
@@ -343,6 +345,31 @@ export function useTransactions(enabled = true) {
                 .order('date', { ascending: false });
 
             if (error) console.error('Error fetching transactions:', error);
+            if (data?.length && !localStorage.getItem(OLD_EXPENSES_CLEARED_KEY)) {
+                const oldExpenseIds = data
+                    .filter((transaction) => transaction.type === 'expense' && String(transaction.date) < EXPENSE_HISTORY_CUTOFF)
+                    .map((transaction) => String(transaction.id));
+
+                if (oldExpenseIds.length > 0) {
+                    const { error: deleteError } = await supabase
+                        .from('transactions')
+                        .delete()
+                        .in('id', oldExpenseIds);
+
+                    if (deleteError) {
+                        console.error('Error clearing old expenses:', deleteError);
+                        setTransactions(data.map(mapTransaction));
+                        return;
+                    }
+                }
+
+                localStorage.setItem(OLD_EXPENSES_CLEARED_KEY, 'true');
+                setTransactions(data
+                    .filter((transaction) => !oldExpenseIds.includes(String(transaction.id)))
+                    .map(mapTransaction));
+                return;
+            }
+
             setTransactions(data ? data.map(mapTransaction) : []);
         } catch (error) {
             console.error('Error fetching transactions:', error);
