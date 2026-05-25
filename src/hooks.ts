@@ -55,9 +55,19 @@ type InvestmentUpdates = {
 const DEFAULT_PAYMENT_METHODS = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto'];
 
 const TRANSACTION_SELECT = '*, category:categories!transactions_category_fkey(id, name, color)';
+const BUDGETS_CLEARED_KEY = 'money-budgets-cleared-v1';
+const MIN_VARIATION_BASE = 0.01;
 
 const isSqlRow = (value: unknown): value is SqlRow =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const calculateVariation = (current: number, previous: number) => {
+    if (!Number.isFinite(current) || !Number.isFinite(previous) || Math.abs(previous) < MIN_VARIATION_BASE) {
+        return 0;
+    }
+
+    return ((current - previous) / Math.abs(previous)) * 100;
+};
 
 const addRecurrenceInterval = (date: Date, frequency?: Transaction['recurrenceFrequency']) => {
     switch (frequency) {
@@ -306,25 +316,7 @@ export function useCategories(enabled = true) {
         const mappedCats = catsData.map(mapCategory);
         setCategories(mappedCats);
 
-        // 2. Seed Budgets for those categories
-        const month = getMonthKey(new Date());
-        const budgetsToSeed = catsData
-            .filter(c => c.budget && c.budget > 0)
-            .map(c => ({
-                user_id: user.id,
-                category_id: c.id,
-                month,
-                limit: c.budget,
-                spent: 0
-            }));
-
-        if (budgetsToSeed.length > 0) {
-            const { error: budError } = await supabase
-                .from('budgets')
-                .insert(budgetsToSeed);
-
-            if (budError) console.error('Error seeding initial budgets:', budError);
-        }
+        localStorage.removeItem(BUDGETS_CLEARED_KEY);
     }, [setCategories]);
 
     return { categories, loading, addCategory, updateCategory, deleteCategory, seedInitialCategories };
@@ -475,6 +467,24 @@ export function useBudgets(enabled = true) {
                 .select('*');
 
             if (error) console.error('Error fetching budgets:', error);
+            if (data?.length && !localStorage.getItem(BUDGETS_CLEARED_KEY)) {
+                const { error: deleteError } = await supabase
+                    .from('budgets')
+                    .delete()
+                    .in('id', data.map((budget) => budget.id));
+
+                if (deleteError) {
+                    console.error('Error clearing budgets:', deleteError);
+                    setBudgets(data.map(mapBudget));
+                    return;
+                }
+
+                localStorage.setItem(BUDGETS_CLEARED_KEY, 'true');
+                setBudgets([]);
+                return;
+            }
+
+            localStorage.setItem(BUDGETS_CLEARED_KEY, 'true');
             setBudgets(data ? data.map(mapBudget) : []);
         } catch (error) {
             console.error('Error fetching budgets:', error);
@@ -876,9 +886,9 @@ export function useFinancialSummary(transactions: Transaction[], month?: number,
         const savings = income - expenses;
         const prevSavings = prevIncome - prevExpenses;
 
-        const incomeVariation = prevIncome > 0 ? ((income - prevIncome) / prevIncome) * 100 : 0;
-        const expenseVariation = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
-        const savingsVariation = prevSavings !== 0 ? ((savings - prevSavings) / Math.abs(prevSavings)) * 100 : 0;
+        const incomeVariation = calculateVariation(income, prevIncome);
+        const expenseVariation = calculateVariation(expenses, prevExpenses);
+        const savingsVariation = calculateVariation(savings, prevSavings);
 
         const targetDate = new Date(targetYear, targetMonth);
         const sparklineData = Array.from({ length: 6 }, (_, i) => {

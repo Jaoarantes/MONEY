@@ -20,7 +20,10 @@ interface KPICardProps {
 }
 
 export const KPICard: React.FC<KPICardProps> = ({ title, value, variation, icon, color, sparklineData }) => {
-    const isPositive = variation >= 0;
+    const safeVariation = Number.isFinite(variation) ? variation : 0;
+    const isPositive = safeVariation >= 0;
+    const absoluteVariation = Math.abs(safeVariation);
+    const variationLabel = absoluteVariation > 999 ? '999%+' : `${absoluteVariation.toFixed(1)}%`;
 
     const colorMap = {
         accent: 'text-accent glow-accent',
@@ -66,13 +69,13 @@ export const KPICard: React.FC<KPICardProps> = ({ title, value, variation, icon,
                 <h3 className="text-2xl font-bold font-numbers mt-1">{formatCurrency(value)}</h3>
             </div>
 
-            <div className="flex items-center gap-1.5 text-sm">
+            <div className="flex items-center gap-1.5 text-sm min-w-0">
                 <span className={cn(
-                    "flex items-center font-medium",
+                    "flex items-center font-medium whitespace-nowrap",
                     isPositive ? "text-positive" : "text-negative"
                 )}>
                     {isPositive ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    {Math.abs(variation).toFixed(1)}%
+                    {variationLabel}
                 </span>
                 <span className="text-text-muted text-xs">vs mês anterior</span>
             </div>
