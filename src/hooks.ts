@@ -62,8 +62,12 @@ const isSqlRow = (value: unknown): value is SqlRow =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const calculateVariation = (current: number, previous: number) => {
-    if (!Number.isFinite(current) || !Number.isFinite(previous) || Math.abs(previous) < MIN_VARIATION_BASE) {
+    if (!Number.isFinite(current) || !Number.isFinite(previous)) {
         return 0;
+    }
+
+    if (Math.abs(previous) < MIN_VARIATION_BASE) {
+        return Math.abs(current) < MIN_VARIATION_BASE ? 0 : (current > 0 ? 100 : -100);
     }
 
     return ((current - previous) / Math.abs(previous)) * 100;
