@@ -12,6 +12,23 @@ import { CategoryBadge } from './components';
 import { format, parseISO } from 'date-fns';
 import type { Transaction, Category } from './types';
 
+const normalizeCategoryValue = (value?: string) =>
+    value
+        ?.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
+    const categoryId = transaction.categoryId?.toString();
+    const normalizedCategory = normalizeCategoryValue(categoryId);
+
+    return categories.find((category) =>
+        category.id?.toString() === categoryId ||
+        normalizeCategoryValue(category.name) === normalizedCategory
+    );
+};
+
 interface TransactionsPageProps {
     transactions: Transaction[];
     categories: Category[];
@@ -54,7 +71,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 const min = minAmount ? Number(minAmount) : 0;
                 const max = maxAmount ? Number(maxAmount) : Number.POSITIVE_INFINITY;
                 const matchesType = filterType === 'all' || t.type === filterType;
-                const matchesCategory = filterCategory === 'all' || t.categoryId === filterCategory;
+                const matchesCategory = filterCategory === 'all' || resolveTransactionCategory(t, categories)?.id === filterCategory;
                 const matchesPayment = filterPayment === 'all' || t.paymentMethod === filterPayment;
                 const matchesAmount = t.amount >= min && t.amount <= max;
                 return matchesSearch && matchesType && matchesCategory && matchesPayment && matchesAmount;
@@ -64,7 +81,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 if (sortField === 'date') return (a.date.localeCompare(b.date)) * factor;
                 return (a.amount - b.amount) * factor;
             });
-    }, [transactions, search, filterType, filterCategory, filterPayment, minAmount, maxAmount, sortField, sortOrder]);
+    }, [transactions, categories, search, filterType, filterCategory, filterPayment, minAmount, maxAmount, sortField, sortOrder]);
 
     const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
     const paginatedTransactions = filteredTransactions.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -74,7 +91,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         const rows = filteredTransactions.map(t => [
             t.date,
             t.description,
-            categories.find(c => c.id === t.categoryId)?.name || 'Outros',
+            resolveTransactionCategory(t, categories)?.name || 'Outros',
             t.type === 'income' ? 'Receita' : 'Despesa',
             t.amount.toString(),
             t.paymentMethod || '-'
@@ -244,7 +261,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             <div className="glass overflow-hidden">
                 <div className="md:hidden divide-y divide-border">
                     {paginatedTransactions.map((tx) => {
-                        const category = categories.find(c => c.id === tx.categoryId);
+                        const category = resolveTransactionCategory(tx, categories);
                         return (
                             <div key={tx.id} className="p-4 space-y-4">
                                 <div className="flex items-start justify-between gap-4">
@@ -322,9 +339,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         </thead>
                         <tbody className="divide-y divide-border">
                             {paginatedTransactions.map((tx) => {
-                                // Robust category resolution
-                                const catId = tx.categoryId;
-                                const category = categories.find(c => c.id === catId);
+                                const category = resolveTransactionCategory(tx, categories);
                                 const isExpanded = expandedId === tx.id;
 
                                 return (
