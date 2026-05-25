@@ -54,6 +54,11 @@ type InvestmentUpdates = {
 
 const DEFAULT_PAYMENT_METHODS = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto'];
 
+const TRANSACTION_SELECT = '*, category:categories!transactions_category_fkey(id, name, color)';
+
+const isSqlRow = (value: unknown): value is SqlRow =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
 const addRecurrenceInterval = (date: Date, frequency?: Transaction['recurrenceFrequency']) => {
     switch (frequency) {
         case 'daily':
@@ -72,14 +77,23 @@ const addRecurrenceInterval = (date: Date, frequency?: Transaction['recurrenceFr
 // MAPPERS — SQL (snake_case) to TS (camelCase)
 // =====================================================
 
-const mapTransaction = (sql: SqlRow): Transaction => ({
-    ...(sql as unknown as Transaction),
-    amount: Number(sql.amount),
-    categoryId: String(sql.category || sql.category_id || sql.categoryId || ''),
-    paymentMethod: sql.payment_method ? String(sql.payment_method) : undefined,
-    createdAt: String(sql.created_at || ''),
-    updatedAt: String(sql.updated_at || '')
-});
+const mapTransaction = (sql: SqlRow): Transaction => {
+    const category = isSqlRow(sql.category) ? sql.category : undefined;
+
+    return {
+        ...(sql as unknown as Transaction),
+        amount: Number(sql.amount),
+        category: category ? {
+            id: String(category.id || ''),
+            name: String(category.name || ''),
+            color: String(category.color || '#8888A0')
+        } : undefined,
+        categoryId: String(category?.id || sql.category || sql.category_id || sql.categoryId || ''),
+        paymentMethod: sql.payment_method ? String(sql.payment_method) : undefined,
+        createdAt: String(sql.created_at || ''),
+        updatedAt: String(sql.updated_at || '')
+    };
+};
 
 const mapCategory = (sql: SqlRow): Category => ({
     ...(sql as unknown as Category),
@@ -329,7 +343,7 @@ export function useTransactions(enabled = true) {
             setLoading(true);
             const { data, error } = await supabase
                 .from('transactions')
-                .select('*')
+                .select(TRANSACTION_SELECT)
                 .order('date', { ascending: false });
 
             if (error) console.error('Error fetching transactions:', error);
@@ -383,7 +397,7 @@ export function useTransactions(enabled = true) {
         const { data, error } = await supabase
             .from('transactions')
             .insert(sqlBody)
-            .select();
+            .select(TRANSACTION_SELECT);
 
         if (error) {
             console.error('Error adding transaction:', error);
@@ -412,7 +426,7 @@ export function useTransactions(enabled = true) {
             .from('transactions')
             .update(sqlUpdates)
             .eq('id', id)
-            .select()
+            .select(TRANSACTION_SELECT)
             .single();
 
         if (error) {

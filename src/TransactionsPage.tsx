@@ -20,6 +20,10 @@ const normalizeCategoryValue = (value?: string) =>
         .toLowerCase();
 
 const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
+    if (transaction.category?.name) {
+        return transaction.category;
+    }
+
     const categoryId = transaction.categoryId?.toString();
     const normalizedCategory = normalizeCategoryValue(categoryId);
 

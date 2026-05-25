@@ -9,6 +9,7 @@ export interface Transaction {
     amount: number;
     description: string;
     categoryId: string;
+    category?: Pick<Category, 'id' | 'name' | 'color'>;
     date: string; // ISO 8601
     recurrent: boolean;
     recurrenceFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
