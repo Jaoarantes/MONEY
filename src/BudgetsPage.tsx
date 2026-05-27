@@ -5,6 +5,7 @@ import {
     ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatCurrency } from './utils';
+import { normalizeCategoryValue, resolveTransactionCategory } from './categoryUtils';
 import { ProgressBar, Modal } from './components';
 import type { Budget, Category, Transaction } from './types';
 
@@ -20,27 +21,6 @@ interface BudgetsPageProps {
     onUpdateBudget: (id: string, b: Partial<Budget>) => void | Promise<void>;
     onDeleteBudget: (id: string) => void | Promise<void>;
 }
-
-const normalizeCategoryValue = (value?: string) =>
-    value
-        ?.normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .trim()
-        .toLowerCase();
-
-const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
-    if (transaction.category?.name) {
-        return transaction.category;
-    }
-
-    const categoryId = transaction.categoryId?.toString();
-    const normalizedCategory = normalizeCategoryValue(categoryId);
-
-    return categories.find((category) =>
-        category.id?.toString() === categoryId ||
-        normalizeCategoryValue(category.name) === normalizedCategory
-    );
-};
 
 const transactionMatchesCategory = (transaction: Transaction, category: Category | undefined, categories: Category[]) => {
     if (!category) return false;

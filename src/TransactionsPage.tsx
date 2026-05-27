@@ -8,32 +8,12 @@ import {
     ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatCurrency, cn } from './utils';
+import { resolveTransactionCategory } from './categoryUtils';
 import { CategoryBadge } from './components';
 import { format, parseISO } from 'date-fns';
 import type { Transaction, Category } from './types';
 
 type SortField = 'date' | 'description' | 'category' | 'paymentMethod' | 'amount';
-
-const normalizeCategoryValue = (value?: string) =>
-    value
-        ?.normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .trim()
-        .toLowerCase();
-
-const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
-    if (transaction.category?.name) {
-        return transaction.category;
-    }
-
-    const categoryId = transaction.categoryId?.toString();
-    const normalizedCategory = normalizeCategoryValue(categoryId);
-
-    return categories.find((category) =>
-        category.id?.toString() === categoryId ||
-        normalizeCategoryValue(category.name) === normalizedCategory
-    );
-};
 
 interface TransactionsPageProps {
     transactions: Transaction[];

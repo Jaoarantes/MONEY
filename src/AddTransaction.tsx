@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, parseCurrencyInput, formatCurrencyInput } from './utils';
+import { isCategoryAvailableForTransaction } from './categoryUtils';
 import type { Category, Transaction } from './types';
 
 interface AddTransactionProps {
@@ -22,7 +23,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type || 'expense');
     const [amount, setAmount] = useState(initialData?.amount ? formatCurrencyInput(initialData.amount) : '0,00');
     const [description, setDescription] = useState(initialData?.description || '');
-    const [categoryId, setCategoryId] = useState(initialData?.categoryId || categories[0]?.id || '');
+    const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
     const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || paymentMethods[0] || 'Pix');
     const [recurrent, setRecurrent] = useState(initialData?.recurrent || false);
@@ -32,14 +33,28 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    // Auto-select first category if none selected and categories load
-    React.useEffect(() => {
-        if (!categoryId && categories.length > 0) {
-            setCategoryId(categories[0].id);
-        }
-    }, [categories, categoryId]);
+    const filteredCategories = React.useMemo(
+        () => categories
+            .filter((category) => isCategoryAvailableForTransaction(category, type))
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        [categories, type]
+    );
 
-    const filteredCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+    // Auto-select a compatible category when categories load or the transaction type changes.
+    React.useEffect(() => {
+        if (categories.length === 0) {
+            return;
+        }
+
+        const selectedCategory = categories.find((category) => category.id === categoryId);
+        const isSelectedCategoryCompatible = selectedCategory
+            ? isCategoryAvailableForTransaction(selectedCategory, type)
+            : false;
+
+        if (!isSelectedCategoryCompatible) {
+            setCategoryId(filteredCategories[0]?.id || '');
+        }
+    }, [categories, categoryId, filteredCategories, type]);
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^\d]/g, '');
@@ -187,6 +202,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                             className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all"
                             required
                         >
+                            <option value="" disabled>Selecione uma categoria...</option>
                             {filteredCategories.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}

@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { parseISO } from 'date-fns';
 import { formatCurrency } from './utils';
+import { resolveTransactionCategory } from './categoryUtils';
 import { ChartCard } from './components';
 import type { Transaction, Category } from './types';
 
@@ -14,23 +15,6 @@ interface ReportsPageProps {
     transactions: Transaction[];
     categories: Category[];
 }
-
-const normalizeCategoryValue = (value?: string) =>
-    value
-        ?.normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .trim()
-        .toLowerCase();
-
-const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
-    const categoryId = transaction.category?.id || transaction.categoryId?.toString();
-    const normalizedCategory = normalizeCategoryValue(transaction.category?.name || transaction.categoryId);
-
-    return categories.find((category) =>
-        category.id?.toString() === categoryId ||
-        normalizeCategoryValue(category.name) === normalizedCategory
-    );
-};
 
 const getExpenseCategoryData = (transactions: Transaction[], categories: Category[]) => {
     const grouped = new Map<string, { name: string; value: number; color: string }>();

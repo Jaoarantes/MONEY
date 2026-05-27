@@ -10,6 +10,11 @@ import {
 } from 'recharts';
 import { KPICard, ChartCard, ProgressBar } from './components';
 import { formatCurrency } from './utils';
+import {
+    getTransactionCategoryId,
+    normalizeCategoryValue,
+    resolveTransactionCategory
+} from './categoryUtils';
 import type { Transaction, Category, Goal, Budget } from './types';
 
 type SparklinePoint = {
@@ -46,28 +51,6 @@ type TooltipPayload = {
     color?: string;
     name?: string;
     value?: number;
-};
-
-const normalizeCategoryValue = (value?: string) =>
-    value
-        ?.normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9]+/g, ' ')
-        .trim()
-        .toLowerCase();
-
-const getTransactionCategoryId = (transaction: Transaction) => transaction.category?.id || transaction.categoryId?.toString();
-
-const resolveTransactionCategory = (transaction: Transaction, categories: Category[]) => {
-    const categoryId = getTransactionCategoryId(transaction);
-    const normalizedCategory = normalizeCategoryValue(transaction.category?.name || transaction.categoryId);
-
-    return categories.find((category) =>
-        category.id?.toString() === categoryId ||
-        normalizeCategoryValue(category.name) === normalizedCategory ||
-        Boolean(normalizedCategory && normalizeCategoryValue(category.name)?.includes(normalizedCategory)) ||
-        Boolean(normalizeCategoryValue(category.name) && normalizedCategory?.includes(normalizeCategoryValue(category.name) || ''))
-    );
 };
 
 const getFallbackCategory = (categories: Category[]) =>
