@@ -52,6 +52,7 @@ const normalizeCategoryValue = (value?: string) =>
     value
         ?.normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, ' ')
         .trim()
         .toLowerCase();
 
@@ -63,9 +64,14 @@ const resolveTransactionCategory = (transaction: Transaction, categories: Catego
 
     return categories.find((category) =>
         category.id?.toString() === categoryId ||
-        normalizeCategoryValue(category.name) === normalizedCategory
+        normalizeCategoryValue(category.name) === normalizedCategory ||
+        Boolean(normalizedCategory && normalizeCategoryValue(category.name)?.includes(normalizedCategory)) ||
+        Boolean(normalizeCategoryValue(category.name) && normalizedCategory?.includes(normalizeCategoryValue(category.name) || ''))
     );
 };
+
+const getFallbackCategory = (categories: Category[]) =>
+    categories.find((category) => normalizeCategoryValue(category.name) === 'outros');
 
 const resolveCategoryById = (categoryId: string, categories: Category[]) =>
     categories.find((category) => category.id?.toString() === categoryId?.toString());
@@ -89,7 +95,7 @@ const getExpenseCategoryData = (transactions: Transaction[], categories: Categor
     transactions
         .filter((transaction) => transaction.type === 'expense')
         .forEach((transaction) => {
-            const category = resolveTransactionCategory(transaction, categories);
+            const category = resolveTransactionCategory(transaction, categories) || getFallbackCategory(categories);
             if (!category) return;
 
             const key = category.id;
