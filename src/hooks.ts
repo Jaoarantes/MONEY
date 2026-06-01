@@ -63,6 +63,32 @@ const MIN_VARIATION_BASE = 0.01;
 const isSqlRow = (value: unknown): value is SqlRow =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const getCategoryIdentity = (category: Pick<Category, 'name' | 'type'>) =>
+    `${category.name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()}::${category.type}`;
+
+const dedupeCategories = (categories: Category[]) => {
+    const categoriesByIdentity = new Map<string, Category>();
+
+    categories.forEach((category) => {
+        const identity = getCategoryIdentity(category);
+        const existing = categoriesByIdentity.get(identity);
+
+        if (!existing) {
+            categoriesByIdentity.set(identity, category);
+            return;
+        }
+
+        const existingCreatedAt = existing.createdAt || '';
+        const categoryCreatedAt = category.createdAt || '';
+
+        if (categoryCreatedAt && (!existingCreatedAt || categoryCreatedAt < existingCreatedAt)) {
+            categoriesByIdentity.set(identity, category);
+        }
+    });
+
+    return Array.from(categoriesByIdentity.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
 const calculateVariation = (current: number, previous: number) => {
     if (!Number.isFinite(current) || !Number.isFinite(previous)) {
         return 0;
@@ -223,7 +249,7 @@ export function useCategories(enabled = true) {
                 .order('name');
 
             if (error) console.error('Error fetching categories:', error);
-            setCategories(data ? data.map(mapCategory) : []);
+            setCategories(data ? dedupeCategories(data.map(mapCategory)) : []);
         } catch (error) {
             console.error('Error fetching categories:', error);
             setCategories([]);
@@ -257,7 +283,7 @@ export function useCategories(enabled = true) {
         }
 
         const mapped = mapCategory(data);
-        setCategories(prev => [...prev, mapped]);
+        setCategories(prev => dedupeCategories([...prev, mapped]));
         return mapped;
     }, []);
 
@@ -275,7 +301,7 @@ export function useCategories(enabled = true) {
         }
 
         const mapped = mapCategory(data);
-        setCategories(prev => prev.map(c => c.id === id ? mapped : c));
+        setCategories(prev => dedupeCategories(prev.map(c => c.id === id ? mapped : c)));
         return mapped;
     }, []);
 
@@ -299,6 +325,24 @@ export function useCategories(enabled = true) {
 
         const { DEFAULT_CATEGORIES } = await import('./seedData');
 
+        const { data: existingCategories, error: existingCategoriesError } = await supabase
+            .from('categories')
+            .select('*');
+
+        if (existingCategoriesError) {
+            console.error('Error checking existing categories:', existingCategoriesError);
+            return;
+        }
+
+        const existingCategoryKeys = new Set(
+            (existingCategories || []).map((category) =>
+                getCategoryIdentity({
+                    name: String(category.name || ''),
+                    type: (category.type === 'income' || category.type === 'both') ? category.type : 'expense'
+                })
+            )
+        );
+
         // 1. Seed Categories
         const newCatsBody = DEFAULT_CATEGORIES.map(c => ({
             user_id: user.id,
@@ -307,7 +351,13 @@ export function useCategories(enabled = true) {
             icon: c.icon,
             color: c.color,
             budget: c.budget
-        }));
+        })).filter((category) => !existingCategoryKeys.has(getCategoryIdentity(category)));
+
+        if (newCatsBody.length === 0) {
+            setCategories(dedupeCategories((existingCategories || []).map(mapCategory)));
+            localStorage.removeItem(BUDGETS_CLEARED_KEY);
+            return;
+        }
 
         const { data: catsData, error: catError } = await supabase
             .from('categories')
@@ -319,7 +369,7 @@ export function useCategories(enabled = true) {
             return;
         }
 
-        const mappedCats = catsData.map(mapCategory);
+        const mappedCats = dedupeCategories([...(existingCategories || []).map(mapCategory), ...catsData.map(mapCategory)]);
         setCategories(mappedCats);
 
         localStorage.removeItem(BUDGETS_CLEARED_KEY);
