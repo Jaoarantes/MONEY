@@ -20,6 +20,20 @@ import type { PageName, Transaction } from './types';
 import { cn } from './utils';
 import { startOfMonth, endOfMonth, parseISO, isWithinInterval } from 'date-fns';
 
+const normalizeInvestmentType = (type: unknown) => {
+  const value = String(type || 'reserve');
+  const legacyTypes: Record<string, string> = {
+    fii: 'stock',
+    fund: 'fixed_income',
+    international: 'stock',
+    other: 'reserve'
+  };
+
+  return ['reserve', 'fixed_income', 'stock', 'crypto'].includes(value)
+    ? value
+    : legacyTypes[value] || 'reserve';
+};
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -188,7 +202,7 @@ export default function App() {
         id: investment.id,
         user_id: user.id,
         name: investment.name,
-        type: investment.type || 'other',
+        type: normalizeInvestmentType(investment.type),
         broker: investment.broker || '',
         invested_amount: investment.investedAmount || investment.invested_amount || 0,
         current_value: investment.currentValue || investment.current_value || 0,
@@ -336,11 +350,27 @@ export default function App() {
             investments={investments}
             onAddInvestment={async (investment) => {
               const created = await addInvestment(investment);
-              addToast(created ? 'success' : 'error', created ? 'Investimento cadastrado!' : 'Nao foi possivel cadastrar o investimento.');
+              addToast(
+                created ? 'success' : 'error',
+                created
+                  ? 'Investimento cadastrado!'
+                  : investment.type === 'reserve'
+                    ? 'O banco ainda precisa da migração de investimentos para aceitar Reserva.'
+                    : 'Não foi possível cadastrar o investimento.'
+              );
+              return Boolean(created);
             }}
             onUpdateInvestment={async (id, investment) => {
               const updated = await updateInvestment(id, investment);
-              addToast(updated ? 'success' : 'error', updated ? 'Investimento atualizado!' : 'Nao foi possivel atualizar o investimento.');
+              addToast(
+                updated ? 'success' : 'error',
+                updated
+                  ? 'Investimento atualizado!'
+                  : investment.type === 'reserve'
+                    ? 'O banco ainda precisa da migração de investimentos para aceitar Reserva.'
+                    : 'Não foi possível atualizar o investimento.'
+              );
+              return Boolean(updated);
             }}
             onDeleteInvestment={async (id) => {
               if (!window.confirm('Excluir este investimento?')) return;

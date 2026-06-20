@@ -59,7 +59,7 @@ CREATE TABLE investments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  type TEXT CHECK (type IN ('fixed_income', 'stock', 'fii', 'crypto', 'fund', 'international', 'other')) NOT NULL DEFAULT 'other',
+  type TEXT CHECK (type IN ('reserve', 'fixed_income', 'stock', 'crypto')) NOT NULL DEFAULT 'reserve',
   broker TEXT NOT NULL DEFAULT '',
   invested_amount NUMERIC NOT NULL DEFAULT 0,
   current_value NUMERIC NOT NULL DEFAULT 0,

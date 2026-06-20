@@ -56,7 +56,7 @@ export interface Investment {
     id: string;
     user_id: string;
     name: string;
-    type: 'fixed_income' | 'stock' | 'fii' | 'crypto' | 'fund' | 'international' | 'other';
+    type: 'reserve' | 'fixed_income' | 'stock' | 'crypto';
     broker: string;
     investedAmount: number;
     currentValue: number;

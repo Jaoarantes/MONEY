@@ -52,6 +52,21 @@ type InvestmentUpdates = {
     color?: string;
 };
 
+const INVESTMENT_TYPE_VALUES = ['reserve', 'fixed_income', 'stock', 'crypto'] as const;
+const LEGACY_INVESTMENT_TYPE_MAP: Record<string, Investment['type']> = {
+    fii: 'stock',
+    fund: 'fixed_income',
+    international: 'stock',
+    other: 'reserve'
+};
+
+const normalizeInvestmentType = (type: unknown): Investment['type'] => {
+    const value = String(type || 'reserve');
+    return INVESTMENT_TYPE_VALUES.includes(value as Investment['type'])
+        ? value as Investment['type']
+        : LEGACY_INVESTMENT_TYPE_MAP[value] || 'reserve';
+};
+
 const DEFAULT_PAYMENT_METHODS = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'TED', 'Boleto'];
 
 const TRANSACTION_SELECT = '*, category:categories!transactions_category_fkey(id, name, color)';
@@ -160,6 +175,7 @@ const mapBudget = (sql: SqlRow): Budget => ({
 
 const mapInvestment = (sql: SqlRow): Investment => ({
     ...(sql as unknown as Investment),
+    type: normalizeInvestmentType(sql.type),
     investedAmount: Number(sql.invested_amount ?? sql.investedAmount ?? 0),
     currentValue: Number(sql.current_value ?? sql.currentValue ?? 0),
     monthlyYield: Number(sql.monthly_yield ?? sql.monthlyYield ?? 0),

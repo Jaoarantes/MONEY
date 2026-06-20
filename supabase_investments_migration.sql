@@ -1,10 +1,8 @@
--- Investments table migration for existing Supabase projects
-
 CREATE TABLE IF NOT EXISTS investments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  type TEXT CHECK (type IN ('fixed_income', 'stock', 'fii', 'crypto', 'fund', 'international', 'other')) NOT NULL DEFAULT 'other',
+  type TEXT CHECK (type IN ('reserve', 'fixed_income', 'stock', 'crypto')) NOT NULL DEFAULT 'reserve',
   broker TEXT NOT NULL DEFAULT '',
   invested_amount NUMERIC NOT NULL DEFAULT 0,
   current_value NUMERIC NOT NULL DEFAULT 0,
@@ -20,6 +18,25 @@ CREATE TABLE IF NOT EXISTS investments (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE investments DROP CONSTRAINT IF EXISTS investments_type_check;
+
+UPDATE investments
+SET type = CASE
+  WHEN type = 'fii' THEN 'stock'
+  WHEN type = 'fund' THEN 'fixed_income'
+  WHEN type = 'international' THEN 'stock'
+  WHEN type = 'other' THEN 'reserve'
+  WHEN type IN ('reserve', 'fixed_income', 'stock', 'crypto') THEN type
+  ELSE 'reserve'
+END;
+
+ALTER TABLE investments
+ALTER COLUMN type SET DEFAULT 'reserve';
+
+ALTER TABLE investments
+ADD CONSTRAINT investments_type_check
+CHECK (type IN ('reserve', 'fixed_income', 'stock', 'crypto'));
 
 ALTER TABLE investments ENABLE ROW LEVEL SECURITY;
 

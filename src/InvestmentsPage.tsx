@@ -13,19 +13,134 @@ import type { Investment } from './types';
 
 interface InvestmentsPageProps {
     investments: Investment[];
-    onAddInvestment: (investment: Omit<Investment, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => void | Promise<void>;
-    onUpdateInvestment: (id: string, investment: Partial<Investment>) => void | Promise<void>;
+    onAddInvestment: (investment: Omit<Investment, 'id' | 'user_id' | 'createdAt' | 'updatedAt'>) => boolean | Promise<boolean>;
+    onUpdateInvestment: (id: string, investment: Partial<Investment>) => boolean | Promise<boolean>;
     onDeleteInvestment: (id: string) => void | Promise<void>;
 }
 
-const INVESTMENT_TYPES: Array<{ id: Investment['type']; label: string; color: string }> = [
-    { id: 'fixed_income', label: 'Renda Fixa', color: '#00D9A6' },
-    { id: 'stock', label: 'Ações', color: '#6C63FF' },
-    { id: 'fii', label: 'FIIs', color: '#FFB830' },
-    { id: 'crypto', label: 'Cripto', color: '#FF4D6D' },
-    { id: 'fund', label: 'Fundos', color: '#0EA5E9' },
-    { id: 'international', label: 'Exterior', color: '#A855F7' },
-    { id: 'other', label: 'Outros', color: '#94A3B8' }
+type InvestmentTypeConfig = {
+    id: Investment['type'];
+    label: string;
+    color: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    institutionLabel: string;
+    institutionPlaceholder: string;
+    investedLabel: string;
+    currentLabel: string;
+    monthlyYieldLabel: string;
+    annualYieldLabel: string;
+    quantityLabel?: string;
+    unitPriceLabel?: string;
+    dateLabel: string;
+    notesLabel: string;
+    notesPlaceholder: string;
+    products: string[];
+    liquidityOptions: Investment['liquidity'][];
+    riskOptions: Investment['risk'][];
+    defaultLiquidity: Investment['liquidity'];
+    defaultRisk: Investment['risk'];
+    showQuantity: boolean;
+    showUnitPrice: boolean;
+};
+
+const INVESTMENT_TYPES: InvestmentTypeConfig[] = [
+    {
+        id: 'reserve',
+        label: 'Reserva',
+        color: '#38BDF8',
+        nameLabel: 'Tipo de reserva',
+        namePlaceholder: 'Cofrinho, caixinha, conta remunerada...',
+        institutionLabel: 'Banco/Conta',
+        institutionPlaceholder: 'Nubank, Mercado Pago, PicPay...',
+        investedLabel: 'Valor guardado',
+        currentLabel: 'Saldo atual',
+        monthlyYieldLabel: 'Rendimento mensal (%)',
+        annualYieldLabel: 'Rendimento anual (%)',
+        dateLabel: 'Data de início',
+        notesLabel: 'Objetivo da reserva',
+        notesPlaceholder: 'Emergência, viagem, impostos, oportunidade...',
+        products: ['Cofrinho', 'Caixinha', 'Conta remunerada', 'CDB liquidez diária', 'Tesouro Selic', 'Fundo DI'],
+        liquidityOptions: ['daily', 'short'],
+        riskOptions: ['low'],
+        defaultLiquidity: 'daily',
+        defaultRisk: 'low',
+        showQuantity: false,
+        showUnitPrice: false
+    },
+    {
+        id: 'fixed_income',
+        label: 'Renda Fixa',
+        color: '#00D9A6',
+        nameLabel: 'Produto',
+        namePlaceholder: 'CDB 110% CDI, Tesouro IPCA+ 2035...',
+        institutionLabel: 'Banco/Corretora',
+        institutionPlaceholder: 'XP, BTG, Inter, Tesouro Direto...',
+        investedLabel: 'Valor aplicado',
+        currentLabel: 'Valor atualizado',
+        monthlyYieldLabel: 'Rentab. mensal (%)',
+        annualYieldLabel: 'Taxa/Rentab. anual (%)',
+        dateLabel: 'Data da aplicação',
+        notesLabel: 'Indexador, vencimento e garantias',
+        notesPlaceholder: 'CDI/IPCA/pré, vencimento, carência, FGC, emissor...',
+        products: ['CDB', 'LCI', 'LCA', 'Tesouro Selic', 'Tesouro IPCA+', 'Tesouro Prefixado', 'CRI', 'CRA', 'Debênture'],
+        liquidityOptions: ['daily', 'short', 'medium', 'long', 'locked'],
+        riskOptions: ['low', 'medium', 'high'],
+        defaultLiquidity: 'medium',
+        defaultRisk: 'low',
+        showQuantity: false,
+        showUnitPrice: false
+    },
+    {
+        id: 'stock',
+        label: 'Ações',
+        color: '#6C63FF',
+        nameLabel: 'Ticker/Ativo',
+        namePlaceholder: 'PETR4, ITUB4, IVVB11, MXRF11...',
+        institutionLabel: 'Corretora',
+        institutionPlaceholder: 'NuInvest, XP, Rico, Clear...',
+        investedLabel: 'Total investido',
+        currentLabel: 'Valor de mercado',
+        monthlyYieldLabel: 'Dividend yield mensal (%)',
+        annualYieldLabel: 'Dividend yield anual (%)',
+        quantityLabel: 'Quantidade de cotas/ações',
+        unitPriceLabel: 'Preço médio',
+        dateLabel: 'Data da compra',
+        notesLabel: 'Tese e setor',
+        notesPlaceholder: 'Setor, preço teto, estratégia, dividendos, rebalanceamento...',
+        products: ['Ação brasileira', 'FII', 'ETF', 'BDR', 'Stock exterior', 'REIT'],
+        liquidityOptions: ['daily'],
+        riskOptions: ['medium', 'high'],
+        defaultLiquidity: 'daily',
+        defaultRisk: 'high',
+        showQuantity: true,
+        showUnitPrice: true
+    },
+    {
+        id: 'crypto',
+        label: 'Criptomoedas',
+        color: '#FF4D6D',
+        nameLabel: 'Moeda/Token',
+        namePlaceholder: 'BTC, ETH, SOL, USDC...',
+        institutionLabel: 'Exchange/Carteira',
+        institutionPlaceholder: 'Binance, Coinbase, hardware wallet...',
+        investedLabel: 'Total comprado',
+        currentLabel: 'Valor atual',
+        monthlyYieldLabel: 'Rentab. mensal (%)',
+        annualYieldLabel: 'Rentab. anual (%)',
+        quantityLabel: 'Quantidade de moedas',
+        unitPriceLabel: 'Preço médio',
+        dateLabel: 'Data da compra',
+        notesLabel: 'Custódia e rede',
+        notesPlaceholder: 'Rede, cold wallet, staking, estratégia de saída...',
+        products: ['Bitcoin', 'Ethereum', 'Stablecoin', 'Altcoin', 'Token DeFi', 'Staking'],
+        liquidityOptions: ['daily', 'locked'],
+        riskOptions: ['high'],
+        defaultLiquidity: 'daily',
+        defaultRisk: 'high',
+        showQuantity: true,
+        showUnitPrice: true
+    }
 ];
 
 const LIQUIDITY_LABELS: Record<Investment['liquidity'], string> = {
@@ -44,7 +159,7 @@ const RISK_LABELS: Record<Investment['risk'], string> = {
 
 const DEFAULT_FORM: Omit<Investment, 'id' | 'user_id' | 'createdAt' | 'updatedAt'> = {
     name: '',
-    type: 'fixed_income',
+    type: 'reserve',
     broker: '',
     investedAmount: 0,
     currentValue: 0,
@@ -56,11 +171,21 @@ const DEFAULT_FORM: Omit<Investment, 'id' | 'user_id' | 'createdAt' | 'updatedAt
     liquidity: 'daily',
     risk: 'low',
     notes: '',
-    color: '#00D9A6'
+    color: '#38BDF8'
 };
 
 const percent = (value: number, total: number) => total > 0 ? (value / total) * 100 : 0;
-const getTypeMeta = (type: Investment['type']) => INVESTMENT_TYPES.find(item => item.id === type) || INVESTMENT_TYPES[6];
+const LEGACY_TYPE_MAP: Record<string, Investment['type']> = {
+    fii: 'stock',
+    fund: 'fixed_income',
+    international: 'stock',
+    other: 'reserve'
+};
+const normalizeInvestmentType = (type: string): Investment['type'] =>
+    INVESTMENT_TYPES.some(item => item.id === type)
+        ? type as Investment['type']
+        : LEGACY_TYPE_MAP[type] || 'reserve';
+const getTypeMeta = (type: string) => INVESTMENT_TYPES.find(item => item.id === normalizeInvestmentType(type)) || INVESTMENT_TYPES[0];
 
 const KpiTile = ({
     title, value, detail, icon, tone
@@ -104,6 +229,8 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
     const [investedAmountInput, setInvestedAmountInput] = useState('0,00');
     const [currentValueInput, setCurrentValueInput] = useState('0,00');
     const [unitPriceInput, setUnitPriceInput] = useState('0,00');
+    const [isSaving, setIsSaving] = useState(false);
+    const selectedTypeConfig = getTypeMeta(form.type);
 
     const metrics = useMemo(() => {
         const invested = investments.reduce((sum, item) => sum + item.investedAmount, 0);
@@ -117,7 +244,7 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
         const allocationByType = INVESTMENT_TYPES
             .map(type => ({
                 name: type.label,
-                value: investments.filter(item => item.type === type.id).reduce((sum, item) => sum + item.currentValue, 0),
+                value: investments.filter(item => normalizeInvestmentType(item.type) === type.id).reduce((sum, item) => sum + item.currentValue, 0),
                 color: type.color
             }))
             .filter(item => item.value > 0);
@@ -163,21 +290,23 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
 
     const openEdit = (investment: Investment) => {
         setEditingInvestment(investment);
+        const type = normalizeInvestmentType(investment.type);
+        const typeConfig = getTypeMeta(type);
         setForm({
             name: investment.name,
-            type: investment.type,
+            type,
             broker: investment.broker,
             investedAmount: investment.investedAmount,
             currentValue: investment.currentValue,
             monthlyYield: investment.monthlyYield,
             annualYield: investment.annualYield,
-            quantity: investment.quantity,
-            unitPrice: investment.unitPrice,
+            quantity: typeConfig.showQuantity ? investment.quantity : undefined,
+            unitPrice: typeConfig.showUnitPrice ? investment.unitPrice : undefined,
             purchaseDate: investment.purchaseDate,
-            liquidity: investment.liquidity,
-            risk: investment.risk,
+            liquidity: typeConfig.liquidityOptions.includes(investment.liquidity) ? investment.liquidity : typeConfig.defaultLiquidity,
+            risk: typeConfig.riskOptions.includes(investment.risk) ? investment.risk : typeConfig.defaultRisk,
             notes: investment.notes || '',
-            color: investment.color
+            color: investment.color || typeConfig.color
         });
         setInvestedAmountInput(formatCurrencyInput(investment.investedAmount));
         setCurrentValueInput(formatCurrencyInput(investment.currentValue));
@@ -185,23 +314,24 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
         setIsModalOpen(true);
     };
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        setIsSaving(true);
         const payload = {
             ...form,
             investedAmount: parseCurrencyInput(investedAmountInput),
             currentValue: parseCurrencyInput(currentValueInput),
-            unitPrice: parseCurrencyInput(unitPriceInput),
+            quantity: selectedTypeConfig.showQuantity ? form.quantity : undefined,
+            unitPrice: selectedTypeConfig.showUnitPrice ? parseCurrencyInput(unitPriceInput) : undefined,
             color: form.color || getTypeMeta(form.type).color
         };
 
-        if (editingInvestment) {
-            onUpdateInvestment(editingInvestment.id, payload);
-        } else {
-            onAddInvestment(payload);
-        }
+        const success = editingInvestment
+            ? await onUpdateInvestment(editingInvestment.id, payload)
+            : await onAddInvestment(payload);
 
-        setIsModalOpen(false);
+        setIsSaving(false);
+        if (success) setIsModalOpen(false);
     };
 
     return (
@@ -375,60 +505,82 @@ export const InvestmentsPage: React.FC<InvestmentsPageProps> = ({
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2 sm:col-span-2">
-                            <label className="text-sm font-semibold text-text-secondary">Nome do ativo</label>
-                            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" placeholder="Tesouro Selic, PETR4, BTC..." required />
+                            <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.nameLabel}</label>
+                            <input
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent"
+                                placeholder={selectedTypeConfig.namePlaceholder}
+                                list="investment-product-options"
+                                required
+                            />
+                            <datalist id="investment-product-options">
+                                {selectedTypeConfig.products.map(product => <option key={product} value={product} />)}
+                            </datalist>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-text-secondary">Classe</label>
                             <select value={form.type} onChange={(e) => {
                                 const type = e.target.value as Investment['type'];
-                                setForm({ ...form, type, color: getTypeMeta(type).color });
+                                const typeConfig = getTypeMeta(type);
+                                setForm({
+                                    ...form,
+                                    type,
+                                    color: typeConfig.color,
+                                    liquidity: typeConfig.defaultLiquidity,
+                                    risk: typeConfig.defaultRisk,
+                                    quantity: typeConfig.showQuantity ? form.quantity : undefined,
+                                    unitPrice: typeConfig.showUnitPrice ? form.unitPrice : undefined
+                                });
+                                if (!typeConfig.showUnitPrice) setUnitPriceInput('0,00');
                             }} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent">
                                 {INVESTMENT_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-text-secondary">Corretora/Banco</label>
-                            <input value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" placeholder="NuInvest, XP, Inter..." required />
+                            <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.institutionLabel}</label>
+                            <input value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" placeholder={selectedTypeConfig.institutionPlaceholder} required />
                         </div>
-                        <CurrencyField label="Valor aplicado" value={investedAmountInput} onChange={setInvestedAmountInput} />
-                        <CurrencyField label="Valor atual" value={currentValueInput} onChange={setCurrentValueInput} />
+                        <CurrencyField label={selectedTypeConfig.investedLabel} value={investedAmountInput} onChange={setInvestedAmountInput} />
+                        <CurrencyField label={selectedTypeConfig.currentLabel} value={currentValueInput} onChange={setCurrentValueInput} />
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-text-secondary">Rentab. mensal (%)</label>
+                            <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.monthlyYieldLabel}</label>
                             <input type="number" step="0.01" value={form.monthlyYield} onChange={(e) => setForm({ ...form, monthlyYield: Number(e.target.value) })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-text-secondary">Rentab. anual (%)</label>
+                            <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.annualYieldLabel}</label>
                             <input type="number" step="0.01" value={form.annualYield} onChange={(e) => setForm({ ...form, annualYield: Number(e.target.value) })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" />
                         </div>
+                        {selectedTypeConfig.showQuantity && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.quantityLabel}</label>
+                                <input type="number" step="0.000001" value={form.quantity ?? ''} onChange={(e) => setForm({ ...form, quantity: e.target.value ? Number(e.target.value) : undefined })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" />
+                            </div>
+                        )}
+                        {selectedTypeConfig.showUnitPrice && <CurrencyField label={selectedTypeConfig.unitPriceLabel || 'Preço médio'} value={unitPriceInput} onChange={setUnitPriceInput} />}
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-text-secondary">Quantidade</label>
-                            <input type="number" step="0.000001" value={form.quantity ?? ''} onChange={(e) => setForm({ ...form, quantity: e.target.value ? Number(e.target.value) : undefined })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent" />
-                        </div>
-                        <CurrencyField label="Preço médio/unitário" value={unitPriceInput} onChange={setUnitPriceInput} />
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-text-secondary">Data de compra</label>
+                            <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.dateLabel}</label>
                             <input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent [color-scheme:dark]" required />
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-text-secondary">Liquidez</label>
                             <select value={form.liquidity} onChange={(e) => setForm({ ...form, liquidity: e.target.value as Investment['liquidity'] })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent">
-                                {Object.entries(LIQUIDITY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                {selectedTypeConfig.liquidityOptions.map(value => <option key={value} value={value}>{LIQUIDITY_LABELS[value]}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-text-secondary">Risco</label>
                             <select value={form.risk} onChange={(e) => setForm({ ...form, risk: e.target.value as Investment['risk'] })} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent">
-                                {Object.entries(RISK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                {selectedTypeConfig.riskOptions.map(value => <option key={value} value={value}>{RISK_LABELS[value]}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2 sm:col-span-2">
-                            <label className="text-sm font-semibold text-text-secondary">Observações</label>
-                            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent resize-none" placeholder="Objetivo, vencimento, estratégia..." />
+                            <label className="text-sm font-semibold text-text-secondary">{selectedTypeConfig.notesLabel}</label>
+                            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full bg-bg-input border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-accent resize-none" placeholder={selectedTypeConfig.notesPlaceholder} />
                         </div>
                     </div>
-                    <button type="submit" className="w-full py-4 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                        {editingInvestment ? 'SALVAR INVESTIMENTO' : 'ADICIONAR INVESTIMENTO'}
+                    <button type="submit" disabled={isSaving} className="w-full py-4 bg-accent text-text-on-accent rounded-xl font-bold shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:hover:scale-100">
+                        {isSaving ? 'SALVANDO...' : editingInvestment ? 'SALVAR INVESTIMENTO' : 'ADICIONAR INVESTIMENTO'}
                     </button>
                 </form>
             </Modal>
