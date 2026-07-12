@@ -66,6 +66,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
     const handleContribution = (e: React.FormEvent) => {
         e.preventDefault();
         const amount = Number(contribution.replace(/[^\d]/g, '')) / 100;
+        if (amount <= 0) return;
         if (selectedGoal) {
             onAddContribution(selectedGoal.id, amount);
         }

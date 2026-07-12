@@ -779,7 +779,7 @@ export function useGoals(enabled = true) {
         const goal = goals.find(g => g.id === id);
         if (!goal) return null;
 
-        const newAmount = Math.min(goal.currentAmount + amount, goal.targetAmount);
+        const newAmount = goal.currentAmount + amount;
         const { data, error } = await supabase
             .from('goals')
             .update({ current_amount: newAmount })
